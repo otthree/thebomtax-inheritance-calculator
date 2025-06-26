@@ -1,0 +1,24 @@
+{
+  "name": "상속세 계산기 | 세무법인 더봄",
+  "short_name": "상속세계산기",
+  "description": "2025년 기준 상속세 계산기. 전문 세무사 검증, 실시간 계산, 무료 상담 서비스 제공",
+  "icons": [
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "theme_color": "#334155",
+  "background_color": "#ffffff",
+  "display": "standalone",
+  "start_url": "/",
+  "scope": "/",
+  "lang": "ko",
+  "orientation": "portrait"
+}

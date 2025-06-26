@@ -86,8 +86,10 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
     setIsSubmitting(true)
 
     try {
-      // Google Apps Script 웹앱 URL
-      const GOOGLE_SCRIPT_URL = process.env.NEXT_PUBLIC_GOOGLE_SCRIPT_URL || ""
+      // Google Apps Script 웹앱 URL - 환경변수 또는 기본값 사용
+      const GOOGLE_SCRIPT_URL = process.env.NEXT_PUBLIC_GOOGLE_SCRIPT_URL || "YOUR_GOOGLE_SCRIPT_URL_HERE"
+
+      console.log("Google Script URL:", GOOGLE_SCRIPT_URL) // 디버깅용
 
       // 계산 데이터 포함한 상세 정보 구성
       let detailedInquiry = formData.inquiry
@@ -176,9 +178,12 @@ ${formatNumber(calculationData.totalAssets)} - ${formatNumber(calculationData.to
         companyName: formData.companyName,
         phone: `${formData.phone1}-${formData.phone2}-${formData.phone3}`,
         inquiry: detailedInquiry,
+        source: "상속세 계산기", // 출처 추가
       }
 
-      if (GOOGLE_SCRIPT_URL) {
+      if (GOOGLE_SCRIPT_URL && GOOGLE_SCRIPT_URL !== "YOUR_GOOGLE_SCRIPT_URL_HERE") {
+        console.log("Sending data to Google Sheets:", submitData) // 디버깅용
+
         // Google Sheets에 데이터 저장
         const response = await fetch(GOOGLE_SCRIPT_URL, {
           method: "POST",
@@ -192,6 +197,7 @@ ${formatNumber(calculationData.totalAssets)} - ${formatNumber(calculationData.to
         console.log("상담 신청 데이터가 Google Sheets에 저장되었습니다:", submitData)
       } else {
         console.log("Google Script URL이 설정되지 않았습니다. 로컬 로그:", submitData)
+        alert("Google Sheets 연동이 설정되지 않았습니다. 관리자에게 문의해주세요.")
       }
 
       // 폼 초기화 및 모달 닫기
