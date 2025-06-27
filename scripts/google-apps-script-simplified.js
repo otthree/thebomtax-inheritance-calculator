@@ -58,7 +58,7 @@ function doPost(e) {
     const totalDebtMatch = inquiry.match(/총 채무: ([\d,]+)원/)
     const finalTaxMatch = inquiry.match(/최종 상속세: ([\d,]+)원/)
     const basicDeductionMatch = inquiry.match(/일괄공제: (적용|미적용)/)
-    const spouseDeductionMatch = inquiry.match(/배우자공제: (적용|����적용)/)
+    const spouseDeductionMatch = inquiry.match(/배우자공제: (적용|�����적용)/)
     const housingDeductionMatch = inquiry.match(/동거주택공제: (적용|미적용)/)
 
     if (totalAssetsMatch) totalAssets = Number.parseInt(totalAssetsMatch[1].replace(/,/g, "")) || 0
