@@ -8,9 +8,10 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Calculator, FileText, Zap, TrendingUp, DollarSign, BarChart3, AlertTriangle } from "lucide-react"
+import { Calculator, FileText, Zap, TrendingUp, DollarSign, BarChart3, AlertTriangle, Phone } from "lucide-react"
 import Image from "next/image"
 import ConsultationModal from "@/components/consultation-modal"
+import { Footer } from "@/components/footer"
 
 export default function InheritanceTaxCalculator() {
   const router = useRouter()
@@ -307,18 +308,19 @@ export default function InheritanceTaxCalculator() {
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
+          <div className="flex justify-between items-center h-20">
             {/* Logo */}
             <div className="flex items-center">
               <div className="flex-shrink-0 flex items-center">
-                <Image src="/logo-deobom.png" alt="세무법인 더봄" width={200} height={60} className="h-10 w-auto" />
+                <Image src="/logo-deobom.png" alt="세무법인 더봄" width={240} height={72} className="h-12 w-auto" />
               </div>
             </div>
 
             {/* Right side buttons */}
             <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2 text-slate-600">
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              {/* 데스크톱에서만 전화번호 표시 */}
+              <div className="hidden md:flex items-center space-x-2 text-slate-600">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -326,10 +328,10 @@ export default function InheritanceTaxCalculator() {
                     d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
                   />
                 </svg>
-                <span className="font-medium">02-336-0309</span>
+                <span className="font-medium text-base">02-336-0309</span>
               </div>
               <Button
-                className="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 text-sm font-medium rounded-md"
+                className="bg-slate-800 hover:bg-slate-900 text-white px-6 py-3 text-base font-medium rounded-md"
                 onClick={() => setIsConsultationModalOpen(true)}
               >
                 전문가 상담
@@ -1246,14 +1248,16 @@ export default function InheritanceTaxCalculator() {
         </div>
       </div>
 
-      {/* Footer */}
-      <footer className="bg-slate-800 text-white py-6 mt-16">
-        <div className="max-w-7xl mx-auto px-4 text-center">
-          <p className="text-sm">
-            © 2025 세무법인 더봄. 이 계산기는 참고용이며, 실제 상속세는 전문가와 상담하시기 바랍니다.
-          </p>
-        </div>
-      </footer>
+      {/* 모바일 전화 버튼 - 고정 위치 */}
+      <div className="md:hidden fixed bottom-6 right-6 z-50">
+        <a
+          href="tel:02-336-0309"
+          className="w-14 h-14 bg-slate-800 hover:bg-slate-900 text-white rounded-full flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-110"
+          aria-label="전화걸기"
+        >
+          <Phone className="w-6 h-6" />
+        </a>
+      </div>
 
       {/* 상담 모달 */}
       <ConsultationModal
@@ -1261,6 +1265,9 @@ export default function InheritanceTaxCalculator() {
         onClose={() => setIsConsultationModalOpen(false)}
         calculationData={consultationCalculationData}
       />
+
+      {/* Footer 추가 */}
+      <Footer />
     </div>
   )
 }
