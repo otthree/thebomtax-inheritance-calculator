@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -18,31 +18,30 @@ export default function InheritanceTaxCalculator() {
   const [currentStep, setCurrentStep] = useState(1)
   const [isConsultationModalOpen, setIsConsultationModalOpen] = useState(false)
   const [formData, setFormData] = useState({
-    // 1단계: 부동산
+    // 1단계: 재산
+    // 부동산
     realEstate: "",
     businessProperty: "",
     land: "",
     otherRealEstate: "",
-    giftRealEstate: "",
-    giftOther: "",
-
-    // 2단계: 금융자산
+    // 금융자산
     deposit: "",
     savings: "",
     stocks: "",
     funds: "",
     bonds: "",
     crypto: "",
-
-    // 3단계: 기타자산
+    // 기타자산
     vehicle: "",
-    lifeInsurance: "",
-    pensionInsurance: "",
+    insurance: "",
     businessShare: "",
-    jewelry: "",
     otherAssets: "",
 
-    // 4단계: 채무
+    // 2단계: 증여
+    giftProperty: "",
+    isSpouse: false,
+
+    // 3단계: 채무 및 비용
     mortgageLoan: "",
     creditLoan: "",
     cardDebt: "",
@@ -50,7 +49,7 @@ export default function InheritanceTaxCalculator() {
     taxArrears: "",
     otherDebt: "",
 
-    // 5단계: 공제혜택
+    // 4단계: 공제
     basicDeduction: true,
     spouseDeduction: false,
     housingDeduction: false,
@@ -60,9 +59,7 @@ export default function InheritanceTaxCalculator() {
     // 재산 분류별
     realEstateTotal: 0,
     financialAssetsTotal: 0,
-    insuranceTotal: 0,
-    businessAssetsTotal: 0,
-    movableAssetsTotal: 0,
+    giftAssetsTotal: 0,
     otherAssetsTotal: 0,
     totalAssets: 0,
 
@@ -80,16 +77,33 @@ export default function InheritanceTaxCalculator() {
     taxableAmount: 0,
     taxRate: 0,
     progressiveDeduction: 0,
+    calculatedTax: 0,
+    giftTaxCredit: 0,
+    reportTaxCredit: 0,
+    totalTaxCredit: 0,
     finalTax: 0,
   })
 
   const steps = [
-    { number: 1, name: "부동산", active: currentStep >= 1 },
-    { number: 2, name: "금융자산", active: currentStep >= 2 },
-    { number: 3, name: "기타자산", active: currentStep >= 3 },
-    { number: 4, name: "채무", active: currentStep >= 4 },
-    { number: 5, name: "공제혜택", active: currentStep >= 5 },
+    { number: 1, name: "재산", active: currentStep >= 1 },
+    { number: 2, name: "증여", active: currentStep >= 2 },
+    { number: 3, name: "채무및비용", active: currentStep >= 3 },
+    { number: 4, name: "공제혜택", active: currentStep >= 4 },
   ]
+
+  // 컴포넌트 마운트 시 초기 계산 실행
+  useEffect(() => {
+    calculateTax(formData)
+  }, [])
+
+  // 배우자 체크 시 배우자 공제 자동 체크
+  useEffect(() => {
+    if (formData.isSpouse && !formData.spouseDeduction) {
+      const newFormData = { ...formData, spouseDeduction: true }
+      setFormData(newFormData)
+      calculateTax(newFormData)
+    }
+  }, [formData, formData.isSpouse])
 
   const handleInputChange = (field: string, value: string) => {
     // 숫자만 추출 (콤마 제거)
@@ -98,70 +112,64 @@ export default function InheritanceTaxCalculator() {
     // 숫자를 콤마가 포함된 형태로 포맷팅
     const formattedValue = numericValue ? Number(numericValue).toLocaleString("ko-KR") : ""
 
-    setFormData((prev) => ({ ...prev, [field]: formattedValue }))
+    const newFormData = { ...formData, [field]: formattedValue }
+    setFormData(newFormData)
 
-    // 실시간 계산 (콤마 제거된 값으로)
-    calculateTax({ ...formData, [field]: formattedValue })
+    // 실시간 계산 (새로운 formData로)
+    calculateTax(newFormData)
   }
 
   const calculateTax = (data: typeof formData) => {
+    console.log("=== 계산 시작 ===")
+    console.log("입력 데이터:", data)
+
+    // 만원 단위를 원 단위로 변환하는 함수
+    const convertToWon = (value: string) => {
+      const result = Number.parseInt(value?.replace(/,/g, "") || "0") * 10000
+      return result
+    }
+
     // 부동산 = 주거용 부동산 + 상업용 부동산 + 토지 + 기타부동산
     const realEstateTotal =
-      Number.parseInt(data.realEstate?.replace(/,/g, "") || "0") +
-      Number.parseInt(data.businessProperty?.replace(/,/g, "") || "0") +
-      Number.parseInt(data.land?.replace(/,/g, "") || "0") +
-      Number.parseInt(data.otherRealEstate?.replace(/,/g, "") || "0")
+      convertToWon(data.realEstate) +
+      convertToWon(data.businessProperty) +
+      convertToWon(data.land) +
+      convertToWon(data.otherRealEstate)
 
     // 금융자산 = 예금 + 적금 + 주식 + 펀드 + 채권 + 암호화폐
     const financialAssetsTotal =
-      Number.parseInt(data.deposit?.replace(/,/g, "") || "0") +
-      Number.parseInt(data.savings?.replace(/,/g, "") || "0") +
-      Number.parseInt(data.stocks?.replace(/,/g, "") || "0") +
-      Number.parseInt(data.funds?.replace(/,/g, "") || "0") +
-      Number.parseInt(data.bonds?.replace(/,/g, "") || "0") +
-      Number.parseInt(data.crypto?.replace(/,/g, "") || "0")
+      convertToWon(data.deposit) +
+      convertToWon(data.savings) +
+      convertToWon(data.stocks) +
+      convertToWon(data.funds) +
+      convertToWon(data.bonds) +
+      convertToWon(data.crypto)
 
-    // 보험 = 생명보험금 + 연금보험
-    const insuranceTotal =
-      Number.parseInt(data.lifeInsurance?.replace(/,/g, "") || "0") +
-      Number.parseInt(data.pensionInsurance?.replace(/,/g, "") || "0")
+    // 사전증여자산 = 증여받은 재산
+    const giftAssetsTotal = convertToWon(data.giftProperty)
 
-    // 사업자산 = 사업지분
-    const businessAssetsTotal = Number.parseInt(data.businessShare?.replace(/,/g, "") || "0")
-
-    // 동산 = 차량 + 보석/귀금속
-    const movableAssetsTotal =
-      Number.parseInt(data.vehicle?.replace(/,/g, "") || "0") + Number.parseInt(data.jewelry?.replace(/,/g, "") || "0")
-
-    // 기타자산 = 증여받은 부동산 + 증여받은 기타자산 + 기타 자산
+    // 기타자산 = 차량 + 보험금 + 사업지분 + 기타 자산
     const otherAssetsTotal =
-      Number.parseInt(data.giftRealEstate?.replace(/,/g, "") || "0") +
-      Number.parseInt(data.giftOther?.replace(/,/g, "") || "0") +
-      Number.parseInt(data.otherAssets?.replace(/,/g, "") || "0")
+      convertToWon(data.vehicle) +
+      convertToWon(data.insurance) +
+      convertToWon(data.businessShare) +
+      convertToWon(data.otherAssets)
 
-    // 총재산가액 = 부동산 + 금융자산 + 보험 + 사업자산 + 동산 + 기타자산
-    const totalAssets =
-      realEstateTotal +
-      financialAssetsTotal +
-      insuranceTotal +
-      businessAssetsTotal +
-      movableAssetsTotal +
-      otherAssetsTotal
+    // 총재산가액 = 부동산 + 금융자산 + 사전증여자산 + 기타자산
+    const totalAssets = realEstateTotal + financialAssetsTotal + giftAssetsTotal + otherAssetsTotal
 
     // 금융채무 = 주택담보대출 + 신용대출 + 카드대금
     const financialDebtTotal =
-      Number.parseInt(data.mortgageLoan?.replace(/,/g, "") || "0") +
-      Number.parseInt(data.creditLoan?.replace(/,/g, "") || "0") +
-      Number.parseInt(data.cardDebt?.replace(/,/g, "") || "0")
+      convertToWon(data.mortgageLoan) + convertToWon(data.creditLoan) + convertToWon(data.cardDebt)
 
     // 장례비
-    const funeralExpenseTotal = Number.parseInt(data.funeralExpense?.replace(/,/g, "") || "0")
+    const funeralExpenseTotal = convertToWon(data.funeralExpense)
 
     // 세금미납
-    const taxArrearsTotal = Number.parseInt(data.taxArrears?.replace(/,/g, "") || "0")
+    const taxArrearsTotal = convertToWon(data.taxArrears)
 
     // 기타채무
-    const otherDebtTotal = Number.parseInt(data.otherDebt?.replace(/,/g, "") || "0")
+    const otherDebtTotal = convertToWon(data.otherDebt)
 
     // 총채무 = 장례비 + 금융채무 + 세금미납 + 기타채무
     const totalDebt = funeralExpenseTotal + financialDebtTotal + taxArrearsTotal + otherDebtTotal
@@ -179,14 +187,15 @@ export default function InheritanceTaxCalculator() {
     if (data.spouseDeduction) spouseDeductionAmount = 500000000 // 5억원
     if (data.housingDeduction) housingDeductionAmount = 600000000 // 6억원
 
-    // 금융자산 공제 = (금융자산 - 금융채무) / 5
-    const financialDeduction = Math.max(0, (financialAssetsTotal - financialDebtTotal) / 5)
+    // 금융자산 공제 = min(순금융자산의 20%, 2억원)
+    const netFinancialAssets = Math.max(0, financialAssetsTotal - financialDebtTotal)
+    const financialDeduction = Math.min(netFinancialAssets * 0.2, 200000000) // 최대 2억원
 
     // 총 공제액
     const totalDeductions = basicDeductionAmount + spouseDeductionAmount + housingDeductionAmount + financialDeduction
 
-    // 과세표준 = 총 재산가액 - 총 공제액
-    const taxableAmount = Math.max(0, totalAssets - totalDeductions)
+    // 과세표준 = 순 재산가액 - 총 공제액
+    const taxableAmount = Math.max(0, netAssets - totalDeductions)
 
     // 세율 및 누진공제액 계산
     let taxRate = 0
@@ -215,14 +224,58 @@ export default function InheritanceTaxCalculator() {
     }
 
     // 상속세 산출세액 = (상속세 과세표준 * 세율) - 누진공제액
-    const finalTax = Math.max(0, (taxableAmount * taxRate) / 100 - progressiveDeduction)
+    const calculatedTax = Math.max(0, (taxableAmount * taxRate) / 100 - progressiveDeduction)
 
-    setCalculationResult({
+    // 증여세액공제 계산
+    let giftTaxCredit = 0
+    if (giftAssetsTotal > 0) {
+      // 배우자일 때: 사전증여자산 - 6억원, 아닐 시: 사전증여자산 - 5천만원
+      const giftDeductionAmount = data.isSpouse ? 600000000 : 50000000
+      const deductedGiftAmount = Math.max(0, giftAssetsTotal - giftDeductionAmount)
+
+      if (deductedGiftAmount > 0) {
+        let giftTaxRate = 0
+        let giftProgressiveDeduction = 0
+
+        if (deductedGiftAmount <= 100000000) {
+          // 1억원 이하: 10%
+          giftTaxRate = 10
+          giftProgressiveDeduction = 0
+        } else if (deductedGiftAmount <= 500000000) {
+          // 5억원 이하: 20%
+          giftTaxRate = 20
+          giftProgressiveDeduction = 10000000 // 1천만원
+        } else if (deductedGiftAmount <= 1000000000) {
+          // 10억원 이하: 30%
+          giftTaxRate = 30
+          giftProgressiveDeduction = 60000000 // 6천만원
+        } else if (deductedGiftAmount <= 3000000000) {
+          // 30억원 이하: 40%
+          giftTaxRate = 40
+          giftProgressiveDeduction = 160000000 // 1억 6천만원
+        } else {
+          // 30억원 초과: 50%
+          giftTaxRate = 50
+          giftProgressiveDeduction = 460000000 // 4억 6천만원
+        }
+
+        giftTaxCredit = Math.max(0, (deductedGiftAmount * giftTaxRate) / 100 - giftProgressiveDeduction)
+      }
+    }
+
+    // 신고세액공제 = 산출세액의 3%
+    const reportTaxCredit = calculatedTax * 0.03
+
+    // 세액공제 합계
+    const totalTaxCredit = giftTaxCredit + reportTaxCredit
+
+    // 최종 상속세 = 산출세액 - 세액공제 합계
+    const finalTax = Math.max(0, calculatedTax - totalTaxCredit)
+
+    const result = {
       realEstateTotal,
       financialAssetsTotal,
-      insuranceTotal,
-      businessAssetsTotal,
-      movableAssetsTotal,
+      giftAssetsTotal,
       otherAssetsTotal,
       totalAssets,
       financialDebtTotal,
@@ -236,8 +289,20 @@ export default function InheritanceTaxCalculator() {
       taxableAmount,
       taxRate,
       progressiveDeduction,
+      calculatedTax,
+      giftTaxCredit,
+      reportTaxCredit,
+      totalTaxCredit,
       finalTax,
-    })
+    }
+
+    console.log("=== 계산 결과 ===")
+    console.log("총 재산가액:", totalAssets)
+    console.log("총 채무:", totalDebt)
+    console.log("최종 상속세:", finalTax)
+    console.log("전체 결과:", result)
+
+    setCalculationResult(result)
   }
 
   const formatNumber = (num: number) => {
@@ -247,7 +312,7 @@ export default function InheritanceTaxCalculator() {
   }
 
   const nextStep = () => {
-    if (currentStep < 5) {
+    if (currentStep < 4) {
       setCurrentStep(currentStep + 1)
     }
   }
@@ -277,30 +342,17 @@ export default function InheritanceTaxCalculator() {
     router.push("/result")
   }
 
-  // 상담 모달에 전달할 계산 데이터 (모든 상세 정보 포함)
-  const consultationCalculationData = {
+  // 상담 모달에 전달할 계산 데이터 - 간단하게 정리
+  const consultationData = {
     totalAssets: calculationResult.totalAssets,
     totalDebt: calculationResult.totalDebt,
+    netAssets: calculationResult.netAssets,
+    taxableAmount: calculationResult.taxableAmount,
+    calculatedTax: calculationResult.calculatedTax,
+    finalTax: calculationResult.finalTax,
     basicDeduction: formData.basicDeduction,
     spouseDeduction: formData.spouseDeduction,
     housingDeduction: formData.housingDeduction,
-    financialDeduction: calculationResult.financialDeduction,
-    finalTax: calculationResult.finalTax,
-    realEstateTotal: calculationResult.realEstateTotal,
-    financialAssetsTotal: calculationResult.financialAssetsTotal,
-    insuranceTotal: calculationResult.insuranceTotal,
-    businessAssetsTotal: calculationResult.businessAssetsTotal,
-    movableAssetsTotal: calculationResult.movableAssetsTotal,
-    otherAssetsTotal: calculationResult.otherAssetsTotal,
-    financialDebtTotal: calculationResult.financialDebtTotal,
-    funeralExpenseTotal: calculationResult.funeralExpenseTotal,
-    taxArrearsTotal: calculationResult.taxArrearsTotal,
-    otherDebtTotal: calculationResult.otherDebtTotal,
-    netAssets: calculationResult.netAssets,
-    totalDeductions: calculationResult.totalDeductions,
-    taxableAmount: calculationResult.taxableAmount,
-    taxRate: calculationResult.taxRate,
-    progressiveDeduction: calculationResult.progressiveDeduction,
   }
 
   return (
@@ -390,13 +442,13 @@ export default function InheritanceTaxCalculator() {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-xl">상속세 계산기</CardTitle>
-                  <span className="text-sm">{currentStep} / 5</span>
+                  <span className="text-sm">{currentStep} / 4</span>
                 </div>
                 <div className="mt-4">
                   <div className="flex justify-between text-sm mb-2">
-                    <span>{((currentStep / 5) * 100).toFixed(0)}% 완료</span>
+                    <span>{((currentStep / 4) * 100).toFixed(0)}% 완료</span>
                   </div>
-                  <Progress value={(currentStep / 5) * 100} className="bg-white/20" />
+                  <Progress value={(currentStep / 4) * 100} className="bg-white/20" />
                 </div>
                 <div className="flex justify-between mt-4">
                   {steps.map((step) => (
@@ -418,94 +470,187 @@ export default function InheritanceTaxCalculator() {
             {/* 단계별 입력 폼 */}
             {currentStep === 1 && (
               <Card className="mt-6">
-                <CardHeader>
-                  <CardTitle className="text-lg">부동산</CardTitle>
-                  <p className="text-sm text-gray-600">주거용, 상업용, 토지 등 부동산 자산을 입력해주세요</p>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <Label htmlFor="realEstate" className="text-sm font-medium">
-                        주거용 부동산 (원)
-                      </Label>
-                      <p className="text-xs text-gray-500 mb-2">아파트, 주택, 오피스텔 등</p>
-                      <Input
-                        id="realEstate"
-                        placeholder="예: 800,000,000"
-                        value={formData.realEstate}
-                        onChange={(e) => handleInputChange("realEstate", e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="businessProperty" className="text-sm font-medium">
-                        상업용 부동산 (원)
-                      </Label>
-                      <p className="text-xs text-gray-500 mb-2">상가, 사무실, 임대용 건물 등</p>
-                      <Input
-                        id="businessProperty"
-                        placeholder="예: 500,000,000"
-                        value={formData.businessProperty}
-                        onChange={(e) => handleInputChange("businessProperty", e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="land" className="text-sm font-medium">
-                        토지 (원)
-                      </Label>
-                      <p className="text-xs text-gray-500 mb-2">대지, 전답, 임야, 잡종지 등</p>
-                      <Input
-                        id="land"
-                        placeholder="예: 300,000,000"
-                        value={formData.land}
-                        onChange={(e) => handleInputChange("land", e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="otherRealEstate" className="text-sm font-medium">
-                        기타 부동산 (원)
-                      </Label>
-                      <p className="text-xs text-gray-500 mb-2">펜션, 창고, 공장 등</p>
-                      <Input
-                        id="otherRealEstate"
-                        placeholder="예: 100,000,000"
-                        value={formData.otherRealEstate}
-                        onChange={(e) => handleInputChange("otherRealEstate", e.target.value)}
-                      />
+                <CardHeader></CardHeader>
+                <CardContent className="space-y-8">
+                  {/* 부동산 섹션 */}
+                  <div>
+                    <h3 className="text-base font-semibold mb-4 text-slate-900">부동산</h3>
+                    <p className="text-sm text-gray-600 mb-4">주거용, 상업용, 토지 등 부동산 자산을 입력해주세요</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <Label htmlFor="realEstate" className="text-sm font-medium">
+                          주거용 부동산 (만원)
+                        </Label>
+                        <p className="text-xs text-gray-500 mb-2">아파트, 주택, 오피스텔 등</p>
+                        <Input
+                          id="realEstate"
+                          placeholder="예: 80,000"
+                          value={formData.realEstate}
+                          onChange={(e) => handleInputChange("realEstate", e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="businessProperty" className="text-sm font-medium">
+                          상업용 부동산 (만원)
+                        </Label>
+                        <p className="text-xs text-gray-500 mb-2">상가, 사무실, 임대용 건물 등</p>
+                        <Input
+                          id="businessProperty"
+                          placeholder="예: 50,000"
+                          value={formData.businessProperty}
+                          onChange={(e) => handleInputChange("businessProperty", e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="land" className="text-sm font-medium">
+                          토지 (만원)
+                        </Label>
+                        <p className="text-xs text-gray-500 mb-2">대지, 전답, 임야, 잡종지 등</p>
+                        <Input
+                          id="land"
+                          placeholder="예: 30,000"
+                          value={formData.land}
+                          onChange={(e) => handleInputChange("land", e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="otherRealEstate" className="text-sm font-medium">
+                          기타 부동산 (만원)
+                        </Label>
+                        <p className="text-xs text-gray-500 mb-2">펜션, 창고, 공장 등</p>
+                        <Input
+                          id="otherRealEstate"
+                          placeholder="예: 10,000"
+                          value={formData.otherRealEstate}
+                          onChange={(e) => handleInputChange("otherRealEstate", e.target.value)}
+                        />
+                      </div>
                     </div>
                   </div>
 
-                  {/* 10년 이내 증여재산 */}
-                  <Alert className="bg-yellow-50 border-yellow-200">
-                    <AlertTriangle className="h-4 w-4 text-yellow-600" />
-                    <AlertDescription className="text-yellow-800">
-                      <strong>10년 이내 증여재산 (선택)</strong>
-                      <br />
-                      피상속인이 사망일 전 10년 이내에 상속인에게 증여한 재산이 있다면 입력해주세요
-                    </AlertDescription>
-                  </Alert>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-yellow-50 p-4 rounded-lg">
-                    <div>
-                      <Label htmlFor="giftRealEstate" className="text-sm font-medium">
-                        증여받은 부동산 (원)
-                      </Label>
-                      <Input
-                        id="giftRealEstate"
-                        placeholder="예: 200,000,000"
-                        value={formData.giftRealEstate}
-                        onChange={(e) => handleInputChange("giftRealEstate", e.target.value)}
-                      />
+                  {/* 금융자산 섹션 */}
+                  <div>
+                    <h3 className="text-base font-semibold mb-4 text-slate-900">금융자산</h3>
+                    <p className="text-sm text-gray-600 mb-4">예금, 주식, 펀드 등 금융자산을 입력해주세요</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <Label htmlFor="deposit" className="text-sm font-medium">
+                          예금 (만원)
+                        </Label>
+                        <Input
+                          id="deposit"
+                          placeholder="예: 5,000"
+                          value={formData.deposit}
+                          onChange={(e) => handleInputChange("deposit", e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="savings" className="text-sm font-medium">
+                          적금 (만원)
+                        </Label>
+                        <Input
+                          id="savings"
+                          placeholder="예: 3,000"
+                          value={formData.savings}
+                          onChange={(e) => handleInputChange("savings", e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="stocks" className="text-sm font-medium">
+                          주식 (만원)
+                        </Label>
+                        <Input
+                          id="stocks"
+                          placeholder="예: 5,000"
+                          value={formData.stocks}
+                          onChange={(e) => handleInputChange("stocks", e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="funds" className="text-sm font-medium">
+                          펀드 (만원)
+                        </Label>
+                        <Input
+                          id="funds"
+                          placeholder="예: 2,000"
+                          value={formData.funds}
+                          onChange={(e) => handleInputChange("funds", e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="bonds" className="text-sm font-medium">
+                          채권 (만원)
+                        </Label>
+                        <Input
+                          id="bonds"
+                          placeholder="예: 1,000"
+                          value={formData.bonds}
+                          onChange={(e) => handleInputChange("bonds", e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="crypto" className="text-sm font-medium">
+                          암호화폐 (만원)
+                        </Label>
+                        <Input
+                          id="crypto"
+                          placeholder="예: 1,000"
+                          value={formData.crypto}
+                          onChange={(e) => handleInputChange("crypto", e.target.value)}
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <Label htmlFor="giftOther" className="text-sm font-medium">
-                        증여받은 기타자산 (원)
-                      </Label>
-                      <Input
-                        id="giftOther"
-                        placeholder="예: 50,000,000"
-                        value={formData.giftOther}
-                        onChange={(e) => handleInputChange("giftOther", e.target.value)}
-                      />
+                  </div>
+
+                  {/* 기타 자산 섹션 */}
+                  <div>
+                    <h3 className="text-base font-semibold mb-4 text-slate-900">기타 자산</h3>
+                    <p className="text-sm text-gray-600 mb-4">대여금, 차량 등 기타 자산을 입력해주세요</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <Label htmlFor="vehicle" className="text-sm font-medium">
+                          차량 (만원)
+                        </Label>
+                        <Input
+                          id="vehicle"
+                          placeholder="예: 3,000"
+                          value={formData.vehicle}
+                          onChange={(e) => handleInputChange("vehicle", e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="insurance" className="text-sm font-medium">
+                          보험금 (만원)
+                        </Label>
+                        <Input
+                          id="insurance"
+                          placeholder="예: 3,000"
+                          value={formData.insurance}
+                          onChange={(e) => handleInputChange("insurance", e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="businessShare" className="text-sm font-medium">
+                          사업지분 (만원)
+                        </Label>
+                        <Input
+                          id="businessShare"
+                          placeholder="예: 1,000"
+                          value={formData.businessShare}
+                          onChange={(e) => handleInputChange("businessShare", e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="otherAssets" className="text-sm font-medium">
+                          기타 자산 (만원)
+                        </Label>
+                        <Input
+                          id="otherAssets"
+                          placeholder="예: 2,000"
+                          value={formData.otherAssets}
+                          onChange={(e) => handleInputChange("otherAssets", e.target.value)}
+                        />
+                      </div>
                     </div>
                   </div>
 
@@ -524,78 +669,45 @@ export default function InheritanceTaxCalculator() {
             {currentStep === 2 && (
               <Card className="mt-6">
                 <CardHeader>
-                  <CardTitle className="text-lg">금융자산</CardTitle>
-                  <p className="text-sm text-gray-600">예금, 주식, 펀드 등 금융자산을 입력해주세요</p>
+                  <CardTitle className="text-lg">증여</CardTitle>
+                  <p className="text-sm text-gray-600">
+                    피상속인이 사망일 전 10년 이내에 상속인에게 증여한 재산이 있다면 입력해주세요
+                  </p>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 gap-6">
                     <div>
-                      <Label htmlFor="deposit" className="text-sm font-medium">
-                        예금 (원)
+                      <Label htmlFor="giftProperty" className="text-sm font-medium">
+                        증여받은 재산 (만원)
                       </Label>
                       <Input
-                        id="deposit"
-                        placeholder="예: 50,000,000"
-                        value={formData.deposit}
-                        onChange={(e) => handleInputChange("deposit", e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="savings" className="text-sm font-medium">
-                        적금 (원)
-                      </Label>
-                      <Input
-                        id="savings"
-                        placeholder="예: 30,000,000"
-                        value={formData.savings}
-                        onChange={(e) => handleInputChange("savings", e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="stocks" className="text-sm font-medium">
-                        주식 (원)
-                      </Label>
-                      <Input
-                        id="stocks"
-                        placeholder="예: 50,000,000"
-                        value={formData.stocks}
-                        onChange={(e) => handleInputChange("stocks", e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="funds" className="text-sm font-medium">
-                        펀드 (원)
-                      </Label>
-                      <Input
-                        id="funds"
-                        placeholder="예: 20,000,000"
-                        value={formData.funds}
-                        onChange={(e) => handleInputChange("funds", e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="bonds" className="text-sm font-medium">
-                        채권 (원)
-                      </Label>
-                      <Input
-                        id="bonds"
-                        placeholder="예: 10,000,000"
-                        value={formData.bonds}
-                        onChange={(e) => handleInputChange("bonds", e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="crypto" className="text-sm font-medium">
-                        암호화폐 (원)
-                      </Label>
-                      <Input
-                        id="crypto"
-                        placeholder="예: 10,000,000"
-                        value={formData.crypto}
-                        onChange={(e) => handleInputChange("crypto", e.target.value)}
+                        id="giftProperty"
+                        placeholder="예: 20,000"
+                        value={formData.giftProperty}
+                        onChange={(e) => handleInputChange("giftProperty", e.target.value)}
                       />
                     </div>
                   </div>
+
+                  <div className="flex items-start space-x-3">
+                    <input
+                      type="checkbox"
+                      id="isSpouse"
+                      checked={formData.isSpouse}
+                      onChange={(e) => {
+                        const newFormData = { ...formData, isSpouse: e.target.checked }
+                        setFormData(newFormData)
+                        calculateTax(newFormData)
+                      }}
+                      className="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <div>
+                      <label htmlFor="isSpouse" className="text-base font-medium text-gray-900">
+                        상속인이 피상속인의 배우자일 경우 체크해주세요
+                      </label>
+                    </div>
+                  </div>
+
                   <div className="flex justify-between pt-4">
                     <Button variant="outline" onClick={prevStep}>
                       이전
@@ -611,75 +723,75 @@ export default function InheritanceTaxCalculator() {
             {currentStep === 3 && (
               <Card className="mt-6">
                 <CardHeader>
-                  <CardTitle className="text-lg">기타 자산</CardTitle>
-                  <p className="text-sm text-gray-600">차량, 보험, 사업 등 기타 자산을 입력해주세요</p>
+                  <CardTitle className="text-lg">채무 및 비용</CardTitle>
+                  <p className="text-sm text-gray-600">차감할 채무와 비용을 입력해주세요</p>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <Label htmlFor="vehicle" className="text-sm font-medium">
-                        차량 (원)
+                      <Label htmlFor="mortgageLoan" className="text-sm font-medium">
+                        주택담보대출 (만원)
                       </Label>
                       <Input
-                        id="vehicle"
-                        placeholder="예: 30,000,000"
-                        value={formData.vehicle}
-                        onChange={(e) => handleInputChange("vehicle", e.target.value)}
+                        id="mortgageLoan"
+                        placeholder="예: 20,000"
+                        value={formData.mortgageLoan}
+                        onChange={(e) => handleInputChange("mortgageLoan", e.target.value)}
                       />
                     </div>
                     <div>
-                      <Label htmlFor="lifeInsurance" className="text-sm font-medium">
-                        생명보험금 (원)
+                      <Label htmlFor="creditLoan" className="text-sm font-medium">
+                        신용대출 (만원)
                       </Label>
                       <Input
-                        id="lifeInsurance"
-                        placeholder="예: 30,000,000"
-                        value={formData.lifeInsurance}
-                        onChange={(e) => handleInputChange("lifeInsurance", e.target.value)}
+                        id="creditLoan"
+                        placeholder="예: 3,000"
+                        value={formData.creditLoan}
+                        onChange={(e) => handleInputChange("creditLoan", e.target.value)}
                       />
                     </div>
                     <div>
-                      <Label htmlFor="pensionInsurance" className="text-sm font-medium">
-                        연금보험 (원)
+                      <Label htmlFor="cardDebt" className="text-sm font-medium">
+                        카드대금 (만원)
                       </Label>
                       <Input
-                        id="pensionInsurance"
-                        placeholder="예: 20,000,000"
-                        value={formData.pensionInsurance}
-                        onChange={(e) => handleInputChange("pensionInsurance", e.target.value)}
+                        id="cardDebt"
+                        placeholder="예: 500"
+                        value={formData.cardDebt}
+                        onChange={(e) => handleInputChange("cardDebt", e.target.value)}
                       />
                     </div>
                     <div>
-                      <Label htmlFor="businessShare" className="text-sm font-medium">
-                        사업지분 (원)
+                      <Label htmlFor="funeralExpense" className="text-sm font-medium">
+                        장례비 (만원)
                       </Label>
                       <Input
-                        id="businessShare"
-                        placeholder="예: 100,000,000"
-                        value={formData.businessShare}
-                        onChange={(e) => handleInputChange("businessShare", e.target.value)}
+                        id="funeralExpense"
+                        placeholder="예: 1,000"
+                        value={formData.funeralExpense}
+                        onChange={(e) => handleInputChange("funeralExpense", e.target.value)}
                       />
                     </div>
                     <div>
-                      <Label htmlFor="jewelry" className="text-sm font-medium">
-                        보석/귀금속 (원)
+                      <Label htmlFor="taxArrears" className="text-sm font-medium">
+                        소득세 미납액 (만원)
                       </Label>
                       <Input
-                        id="jewelry"
-                        placeholder="예: 10,000,000"
-                        value={formData.jewelry}
-                        onChange={(e) => handleInputChange("jewelry", e.target.value)}
+                        id="taxArrears"
+                        placeholder="예: 3,000"
+                        value={formData.taxArrears}
+                        onChange={(e) => handleInputChange("taxArrears", e.target.value)}
                       />
                     </div>
                     <div>
-                      <Label htmlFor="otherAssets" className="text-sm font-medium">
-                        기타 자산 (원)
+                      <Label htmlFor="otherDebt" className="text-sm font-medium">
+                        기타 채무 (만원)
                       </Label>
                       <Input
-                        id="otherAssets"
-                        placeholder="예: 20,000,000"
-                        value={formData.otherAssets}
-                        onChange={(e) => handleInputChange("otherAssets", e.target.value)}
+                        id="otherDebt"
+                        placeholder="예: 5,000"
+                        value={formData.otherDebt}
+                        onChange={(e) => handleInputChange("otherDebt", e.target.value)}
                       />
                     </div>
                   </div>
@@ -698,94 +810,7 @@ export default function InheritanceTaxCalculator() {
             {currentStep === 4 && (
               <Card className="mt-6">
                 <CardHeader>
-                  <CardTitle className="text-lg">채무</CardTitle>
-                  <p className="text-sm text-gray-600">대출, 빚 등 채무를 입력해주세요</p>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <Label htmlFor="mortgageLoan" className="text-sm font-medium">
-                        주택담보대출 (원)
-                      </Label>
-                      <Input
-                        id="mortgageLoan"
-                        placeholder="예: 200,000,000"
-                        value={formData.mortgageLoan}
-                        onChange={(e) => handleInputChange("mortgageLoan", e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="creditLoan" className="text-sm font-medium">
-                        신용대출 (원)
-                      </Label>
-                      <Input
-                        id="creditLoan"
-                        placeholder="예: 30,000,000"
-                        value={formData.creditLoan}
-                        onChange={(e) => handleInputChange("creditLoan", e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="cardDebt" className="text-sm font-medium">
-                        카드대금 (원)
-                      </Label>
-                      <Input
-                        id="cardDebt"
-                        placeholder="예: 5,000,000"
-                        value={formData.cardDebt}
-                        onChange={(e) => handleInputChange("cardDebt", e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="funeralExpense" className="text-sm font-medium">
-                        장례비 (원)
-                      </Label>
-                      <Input
-                        id="funeralExpense"
-                        placeholder="예: 10,000,000"
-                        value={formData.funeralExpense}
-                        onChange={(e) => handleInputChange("funeralExpense", e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="taxArrears" className="text-sm font-medium">
-                        소득세 미납액 (원)
-                      </Label>
-                      <Input
-                        id="taxArrears"
-                        placeholder="예: 3,000,000"
-                        value={formData.taxArrears}
-                        onChange={(e) => handleInputChange("taxArrears", e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="otherDebt" className="text-sm font-medium">
-                        기타 채무 (원)
-                      </Label>
-                      <Input
-                        id="otherDebt"
-                        placeholder="예: 5,000,000"
-                        value={formData.otherDebt}
-                        onChange={(e) => handleInputChange("otherDebt", e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <div className="flex justify-between pt-4">
-                    <Button variant="outline" onClick={prevStep}>
-                      이전
-                    </Button>
-                    <Button onClick={nextStep} className="bg-slate-700 hover:bg-slate-800">
-                      다음
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {currentStep === 5 && (
-              <Card className="mt-6">
-                <CardHeader>
-                  <CardTitle className="text-lg">공제 항목</CardTitle>
+                  <CardTitle className="text-lg">공제혜택</CardTitle>
                   <p className="text-sm text-gray-600">적용 가능한 공제를 선택해주세요</p>
                 </CardHeader>
                 <CardContent className="space-y-6">
@@ -827,6 +852,7 @@ export default function InheritanceTaxCalculator() {
                           배우자 공제
                         </label>
                         <p className="text-sm text-gray-600">5억원 (배우자가 있는 경우)</p>
+                        <p className="text-sm text-blue-600 font-medium">배우자 상속분에 경우 최소 5억원 보장</p>
                       </div>
                     </div>
 
@@ -854,7 +880,7 @@ export default function InheritanceTaxCalculator() {
                   <Alert className="bg-blue-50 border-blue-200">
                     <AlertTriangle className="h-4 w-4 text-blue-600" />
                     <AlertDescription className="text-blue-800 text-sm">
-                      💡 공제 항목은 중복 적용 가능하며, 순금융자산의 20% 공제가 자동으로 추가됩니다.
+                      💡 공제 항목은 중복 적용 가능하며, 순금융자산의 20% 공제(최대 2억원)가 자동으로 추가됩니다.
                     </AlertDescription>
                   </Alert>
 
@@ -920,11 +946,15 @@ export default function InheritanceTaxCalculator() {
                       <span className="text-slate-900">{calculationResult.taxRate.toFixed(1)}%</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-slate-600">누진공제</span>
-                      <span className="text-green-600">-{formatNumber(calculationResult.progressiveDeduction)}원</span>
+                      <span className="text-slate-600">산출세액</span>
+                      <span className="text-slate-900">{formatNumber(calculationResult.calculatedTax)}원</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-600">세액공제</span>
+                      <span className="text-green-600">-{formatNumber(calculationResult.totalTaxCredit)}원</span>
                     </div>
                     <div className="flex justify-between font-medium">
-                      <span className="text-slate-600">산출세액</span>
+                      <span className="text-slate-600">최종 상속세</span>
                       <span className="text-slate-900">{formatNumber(calculationResult.finalTax)}원</span>
                     </div>
                   </div>
@@ -960,20 +990,8 @@ export default function InheritanceTaxCalculator() {
                             </span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-slate-600">보험:</span>
-                            <span className="text-slate-900">{formatNumber(calculationResult.insuranceTotal)}원</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-slate-600">사업자산:</span>
-                            <span className="text-slate-900">
-                              {formatNumber(calculationResult.businessAssetsTotal)}원
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-slate-600">동산:</span>
-                            <span className="text-slate-900">
-                              {formatNumber(calculationResult.movableAssetsTotal)}원
-                            </span>
+                            <span className="text-slate-600">사전증여자산:</span>
+                            <span className="text-slate-900">{formatNumber(calculationResult.giftAssetsTotal)}원</span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-slate-600">기타자산:</span>
@@ -1066,7 +1084,7 @@ export default function InheritanceTaxCalculator() {
                         <h4 className="font-medium text-orange-700 mb-3">5단계: 과세표준 계산</h4>
                         <div className="space-y-2 text-sm">
                           <div className="flex justify-between">
-                            <span className="text-slate-600">총 재산가액 - 총 공제액:</span>
+                            <span className="text-slate-600">순 재산가액 - 총 공제액:</span>
                             <span className="text-orange-700">{formatNumber(calculationResult.taxableAmount)}원</span>
                           </div>
                           <div className="text-xs text-slate-500">
@@ -1096,8 +1114,31 @@ export default function InheritanceTaxCalculator() {
                             </span>
                           </div>
                           <div className="flex justify-between font-medium pt-2 border-t border-slate-200">
+                            <span className="text-slate-600">산출세액:</span>
+                            <span className="text-blue-700">{formatNumber(calculationResult.calculatedTax)}원</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 7단계: 세액공제 */}
+                      <div className="mb-6 bg-slate-50 rounded-lg p-4 border-l-4 border-indigo-500">
+                        <h4 className="font-medium text-indigo-700 mb-3">7단계: 세액공제</h4>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-slate-600">증여세액공제:</span>
+                            <span className="text-slate-900">{formatNumber(calculationResult.giftTaxCredit)}원</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-slate-600">신고세액공제:</span>
+                            <span className="text-slate-900">{formatNumber(calculationResult.reportTaxCredit)}원</span>
+                          </div>
+                          <div className="flex justify-between font-medium pt-2 border-t border-slate-200">
+                            <span className="text-slate-600">세액공제 합계:</span>
+                            <span className="text-indigo-700">{formatNumber(calculationResult.totalTaxCredit)}원</span>
+                          </div>
+                          <div className="flex justify-between font-bold pt-2 border-t border-slate-200">
                             <span className="text-slate-600">최종 상속세:</span>
-                            <span className="text-blue-700">{formatNumber(calculationResult.finalTax)}원</span>
+                            <span className="text-indigo-700">{formatNumber(calculationResult.finalTax)}원</span>
                           </div>
                         </div>
                       </div>
@@ -1119,7 +1160,7 @@ export default function InheritanceTaxCalculator() {
                           <div>✓ 일괄공제: 5억원</div>
                           <div>✓ 배우자공제: 5억원</div>
                           <div>✓ 동거주택 상속공제: 6억원</div>
-                          <div>✓ 금융자산 상속공제: 순금융자산의 20%</div>
+                          <div>✓ 금융자산 상속공제: 순금융자산의 20% (최대 2억원)</div>
                         </div>
                       </div>
 
@@ -1133,8 +1174,8 @@ export default function InheritanceTaxCalculator() {
                           최종 상속세: {formatNumber(calculationResult.finalTax)}원
                         </div>
                         <div className="text-sm opacity-90">
-                          과세표준: {formatNumber(calculationResult.taxableAmount)}원 × {calculationResult.taxRate}% -{" "}
-                          {formatNumber(calculationResult.progressiveDeduction)}원
+                          산출세액: {formatNumber(calculationResult.calculatedTax)}원 - 세액공제:{" "}
+                          {formatNumber(calculationResult.totalTaxCredit)}원
                         </div>
                       </div>
                     </div>
@@ -1196,7 +1237,7 @@ export default function InheritanceTaxCalculator() {
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-slate-600 rounded-full"></div>
-                  <span>금융자산 상속공제: 순금융자산의 20%</span>
+                  <span>금융자산 상속공제: 순금융자산의 20% (최대 2억원)</span>
                 </div>
               </div>
             </div>
@@ -1269,7 +1310,7 @@ export default function InheritanceTaxCalculator() {
       <ConsultationModal
         isOpen={isConsultationModalOpen}
         onClose={() => setIsConsultationModalOpen(false)}
-        calculationData={consultationCalculationData}
+        calculationData={consultationData}
       />
 
       {/* Footer 추가 */}

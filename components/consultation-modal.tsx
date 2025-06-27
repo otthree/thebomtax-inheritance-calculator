@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -12,30 +11,7 @@ import { X, Loader2 } from "lucide-react"
 interface ConsultationModalProps {
   isOpen: boolean
   onClose: () => void
-  calculationData?: {
-    totalAssets: number
-    totalDebt: number
-    basicDeduction: boolean
-    spouseDeduction: boolean
-    housingDeduction: boolean
-    financialDeduction: number
-    finalTax: number
-    realEstateTotal: number
-    financialAssetsTotal: number
-    insuranceTotal: number
-    businessAssetsTotal: number
-    movableAssetsTotal: number
-    otherAssetsTotal: number
-    financialDebtTotal: number
-    funeralExpenseTotal: number
-    taxArrearsTotal: number
-    otherDebtTotal: number
-    netAssets: number
-    totalDeductions: number
-    taxableAmount: number
-    taxRate: number
-    progressiveDeduction: number
-  }
+  calculationData?: any // 일단 any로 받아서 디버깅
 }
 
 export default function ConsultationModal({ isOpen, onClose, calculationData }: ConsultationModalProps) {
@@ -58,10 +34,13 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
 
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const formatNumber = (num: number) => {
-    // 10원 단위까지 반올림
-    const rounded = Math.round(num / 10) * 10
-    return rounded.toLocaleString("ko-KR")
+  // 숫자 포맷팅 함수 - 안전하게 처리
+  const formatNumber = (num: any) => {
+    if (!num || isNaN(num) || num === undefined || num === null) {
+      return "0"
+    }
+    const number = Number(num)
+    return Math.round(number / 10) * 10 // 10원 단위 반올림
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -78,7 +57,6 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
 
     setErrors(newErrors)
 
-    // 에러가 있으면 제출 중단
     if (Object.values(newErrors).some((error) => error)) {
       return
     }
@@ -86,85 +64,24 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
     setIsSubmitting(true)
 
     try {
-      // Google Apps Script 웹앱 URL - 환경변수 또는 기본값 사용
-      const GOOGLE_SCRIPT_URL = process.env.NEXT_PUBLIC_GOOGLE_SCRIPT_URL || "YOUR_GOOGLE_SCRIPT_URL_HERE"
+      // 계산 데이터 디버깅
+      console.log("=== 계산 데이터 디버깅 ===")
+      console.log("전체 calculationData:", calculationData)
 
-      console.log("Google Script URL:", GOOGLE_SCRIPT_URL) // 디버깅용
+      // 안전하게 값 추출
+      const totalAssets = calculationData?.totalAssets || 0
+      const totalDebt = calculationData?.totalDebt || 0
+      const finalTax = calculationData?.finalTax || 0
+      const netAssets = calculationData?.netAssets || 0
+      const taxableAmount = calculationData?.taxableAmount || 0
+      const calculatedTax = calculationData?.calculatedTax || 0
 
-      // 계산 데이터 포함한 상세 정보 구성
-      let detailedInquiry = formData.inquiry
+      console.log("추출된 값들:")
+      console.log("총 재산가액:", totalAssets)
+      console.log("총 채무:", totalDebt)
+      console.log("최종 상속세:", finalTax)
 
-      if (calculationData) {
-        // 0원이 아닌 항목들만 필터링하여 표시
-        const assetItems = [
-          { name: "부동산", value: calculationData.realEstateTotal },
-          { name: "금융자산", value: calculationData.financialAssetsTotal },
-          { name: "보험", value: calculationData.insuranceTotal },
-          { name: "사업자산", value: calculationData.businessAssetsTotal },
-          { name: "동산", value: calculationData.movableAssetsTotal },
-          { name: "기타자산", value: calculationData.otherAssetsTotal },
-        ].filter((item) => item.value > 0)
-
-        const debtItems = [
-          { name: "장례비", value: calculationData.funeralExpenseTotal },
-          { name: "금융채무", value: calculationData.financialDebtTotal },
-          { name: "세금미납", value: calculationData.taxArrearsTotal },
-          { name: "기타채무", value: calculationData.otherDebtTotal },
-        ].filter((item) => item.value > 0)
-
-        detailedInquiry += `
-
-=== 상속세 계산 결과 상세 ===
-
-1단계: 총 재산가액 계산`
-
-        // 0원이 아닌 자산 항목들만 표시
-        assetItems.forEach((item) => {
-          detailedInquiry += `
-${item.name}: ${formatNumber(item.value)}원`
-        })
-
-        detailedInquiry += `
-총 재산가액: ${formatNumber(calculationData.totalAssets)}원
-
-2단계: 총 채무 계산`
-
-        // 0원이 아닌 채무 항목들만 표시
-        if (debtItems.length > 0) {
-          debtItems.forEach((item) => {
-            detailedInquiry += `
-${item.name}: ${formatNumber(item.value)}원`
-          })
-        } else {
-          detailedInquiry += `
-채무 없음`
-        }
-
-        detailedInquiry += `
-총 채무: ${formatNumber(calculationData.totalDebt)}원
-
-3단계: 순 재산가액 계산
-총 재산가액 - 총 채무: ${formatNumber(calculationData.netAssets)}원
-${formatNumber(calculationData.totalAssets)} - ${formatNumber(calculationData.totalDebt)} = ${formatNumber(calculationData.netAssets)}
-
-4단계: 공제 계산
-일괄공제: ${calculationData.basicDeduction ? "O" : "X"} (${calculationData.basicDeduction ? "500,000,000" : "0"}원)
-배우자공제: ${calculationData.spouseDeduction ? "O" : "X"} (${calculationData.spouseDeduction ? "500,000,000" : "0"}원)
-동거주택공제: ${calculationData.housingDeduction ? "O" : "X"} (${calculationData.housingDeduction ? "600,000,000" : "0"}원)
-금융자산공제: ${formatNumber(calculationData.financialDeduction)}원
-총 공제액: ${formatNumber(calculationData.totalDeductions)}원
-
-5단계: 과세표준 계산
-총 재산가액 - 총 공제액: ${formatNumber(calculationData.taxableAmount)}원
-${formatNumber(calculationData.totalAssets)} - ${formatNumber(calculationData.totalDeductions)} = ${formatNumber(calculationData.taxableAmount)}
-
-6단계: 세율 적용
-과세표준: ${formatNumber(calculationData.taxableAmount)}원
-적용 세율: ${calculationData.taxRate.toFixed(1)}%
-누진공제: ${formatNumber(calculationData.progressiveDeduction)}원
-최종 상속세: ${formatNumber(calculationData.finalTax)}원`
-      }
-
+      // 구글시트에 보낼 데이터 구성
       const submitData = {
         timestamp: new Date().toLocaleString("ko-KR", {
           timeZone: "Asia/Seoul",
@@ -177,30 +94,49 @@ ${formatNumber(calculationData.totalAssets)} - ${formatNumber(calculationData.to
         }),
         companyName: formData.companyName,
         phone: `${formData.phone1}-${formData.phone2}-${formData.phone3}`,
-        inquiry: detailedInquiry,
-        source: "상속세 계산기", // 출처 추가
+        inquiry: `${formData.inquiry}
+
+=== 상속세 계산 결과 ===
+총 재산가액: ${formatNumber(totalAssets).toLocaleString()}원
+총 채무: ${formatNumber(totalDebt).toLocaleString()}원
+순 재산가액: ${formatNumber(netAssets).toLocaleString()}원
+과세표준: ${formatNumber(taxableAmount).toLocaleString()}원
+산출세액: ${formatNumber(calculatedTax).toLocaleString()}원
+최종 상속세: ${formatNumber(finalTax).toLocaleString()}원
+
+공제 적용:
+- 일괄공제: ${calculationData?.basicDeduction ? "적용" : "미적용"}
+- 배우자공제: ${calculationData?.spouseDeduction ? "적용" : "미적용"}  
+- 동거주택공제: ${calculationData?.housingDeduction ? "적용" : "미적용"}`,
+        source: "상속세 계산기",
       }
 
-      if (GOOGLE_SCRIPT_URL && GOOGLE_SCRIPT_URL !== "YOUR_GOOGLE_SCRIPT_URL_HERE") {
-        console.log("Sending data to Google Sheets:", submitData) // 디버깅용
+      console.log("구글시트 전송 데이터:", submitData)
 
-        // Google Sheets에 데이터 저장
-        const response = await fetch(GOOGLE_SCRIPT_URL, {
-          method: "POST",
-          mode: "no-cors",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(submitData),
-        })
+      // 환경변수에서 구글 스크립트 URL 가져오기
+      const GOOGLE_SCRIPT_URL = process.env.NEXT_PUBLIC_GOOGLE_SCRIPT_URL
 
-        console.log("상담 신청 데이터가 Google Sheets에 저장되었습니다:", submitData)
-      } else {
-        console.log("Google Script URL이 설정되지 않았습니다. 로컬 로그:", submitData)
-        alert("Google Sheets 연동이 설정되지 않았습니다. 관리자에게 문의해주세요.")
+      if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL === "YOUR_GOOGLE_SCRIPT_URL_HERE") {
+        console.log("구글 스크립트 URL이 설정되지 않았습니다.")
+        alert("구글 시트 연동이 설정되지 않았습니다. 관리자에게 문의해주세요.")
+        return
       }
 
-      // 폼 초기화 및 모달 닫기
+      console.log("구글 스크립트 URL:", GOOGLE_SCRIPT_URL)
+
+      // 구글 시트에 데이터 전송
+      const response = await fetch(GOOGLE_SCRIPT_URL, {
+        method: "POST",
+        mode: "no-cors", // CORS 문제 해결
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(submitData),
+      })
+
+      console.log("구글 시트 전송 완료")
+
+      // 폼 초기화
       setFormData({
         companyName: "",
         phone1: "010",
@@ -209,6 +145,7 @@ ${formatNumber(calculationData.totalAssets)} - ${formatNumber(calculationData.to
         inquiry: "",
         privacyAgreed: false,
       })
+
       setErrors({
         companyName: false,
         phone2: false,
@@ -216,12 +153,13 @@ ${formatNumber(calculationData.totalAssets)} - ${formatNumber(calculationData.to
         inquiry: false,
         privacyAgreed: false,
       })
+
       onClose()
 
       // 성공 페이지로 이동
       window.location.href = "/consultation-success"
     } catch (error) {
-      console.error("상담 신청 중 오류가 발생했습니다:", error)
+      console.error("상담 신청 중 오류:", error)
       alert("상담 신청 중 오류가 발생했습니다. 다시 시도해주세요.")
     } finally {
       setIsSubmitting(false)
@@ -230,7 +168,6 @@ ${formatNumber(calculationData.totalAssets)} - ${formatNumber(calculationData.to
 
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
-    // 입력 시 에러 상태 초기화
     if (errors[field as keyof typeof errors]) {
       setErrors((prev) => ({ ...prev, [field]: false }))
     }
@@ -255,6 +192,25 @@ ${formatNumber(calculationData.totalAssets)} - ${formatNumber(calculationData.to
             <X className="h-4 w-4" />
           </Button>
         </div>
+
+        {/* 계산 결과 미리보기 */}
+        {calculationData && (
+          <div className="p-6 bg-slate-50 border-b">
+            <h3 className="text-lg font-semibold mb-3">계산 결과 요약</h3>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <span className="text-slate-600">총 재산가액:</span>
+                <span className="font-medium ml-2">{formatNumber(calculationData.totalAssets).toLocaleString()}원</span>
+              </div>
+              <div>
+                <span className="text-slate-600">최종 상속세:</span>
+                <span className="font-medium ml-2 text-red-600">
+                  {formatNumber(calculationData.finalTax).toLocaleString()}원
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 폼 */}
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
@@ -351,7 +307,13 @@ ${formatNumber(calculationData.totalAssets)} - ${formatNumber(calculationData.to
 
           {/* 제출 버튼 */}
           <div className="flex gap-3 pt-4">
-            <Button type="button" variant="outline" onClick={onClose} className="flex-1" disabled={isSubmitting}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              className="flex-1 bg-transparent"
+              disabled={isSubmitting}
+            >
               취소
             </Button>
             <Button type="submit" className="flex-1 bg-slate-700 hover:bg-slate-800 text-white" disabled={isSubmitting}>
