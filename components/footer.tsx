@@ -1,5 +1,6 @@
 import { Phone, MessageCircle, MapPin, Youtube, Instagram, FileText } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 
 export function Footer() {
   return (
@@ -10,13 +11,7 @@ export function Footer() {
           {/* Logo Section */}
           <div className="lg:col-span-1">
             <div className="flex items-center mb-6">
-              <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center mr-3">
-                <div className="text-slate-800 font-bold text-lg">더봄</div>
-              </div>
-              <div>
-                <div className="text-lg font-bold">세무법인 더봄</div>
-                <div className="text-sm text-slate-300">Tax Accounting Corporation The BOM</div>
-              </div>
+              <Image src="/logo-deobom-white.png" alt="세무법인 더봄" width={200} height={60} className="h-10 w-auto" />
             </div>
 
             {/* SNS Links */}

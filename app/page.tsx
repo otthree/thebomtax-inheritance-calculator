@@ -312,7 +312,13 @@ export default function InheritanceTaxCalculator() {
             {/* Logo */}
             <div className="flex items-center">
               <div className="flex-shrink-0 flex items-center">
-                <Image src="/logo-deobom.png" alt="세무법인 더봄" width={240} height={72} className="h-12 w-auto" />
+                <Image
+                  src="/logo-deobom-blue.png"
+                  alt="세무법인 더봄"
+                  width={240}
+                  height={72}
+                  className="h-10 w-auto"
+                />
               </div>
             </div>
 
