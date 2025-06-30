@@ -105,17 +105,16 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
 
       // --- 응답 본문 읽기 ---------------------------------------------------
       const raw = await response.text()
-      let result: any
+      let result: any = {}
 
-      if (response.headers.get("content-type")?.includes("application/json")) {
-        // 헤더가 JSON 이면 그대로 파싱
+      try {
+        // content-type이 틀렸어도 본문이 JSON이면 직접 파싱한다
         result = JSON.parse(raw)
-      } else {
-        // 아니면 실패 객체로 래핑
+      } catch {
         result = { success: false, message: raw || "서버 오류" }
       }
 
-      if (!response.ok || !result.success) {
+      if (!result.success || !response.ok) {
         console.error("상담 신청 실패:", result)
 
         // 구체적인 오류 메시지 표시

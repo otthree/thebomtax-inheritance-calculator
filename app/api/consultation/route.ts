@@ -4,6 +4,7 @@ import { type NextRequest, NextResponse } from "next/server"
 const fail = (msg: string, status = 500, extra: Record<string, unknown> = {}) =>
   NextResponse.json({ success: false, message: msg, ...extra }, { status })
 
+// 2xx, 3xx를 모두 “성공”으로 보고 싶은 경우에 사용
 const isRedirectOrOk = (res: Response) =>
   (res.status >= 200 && res.status < 300) || (res.status >= 300 && res.status < 400)
 
@@ -47,8 +48,8 @@ export async function POST(request: NextRequest) {
       return fail("Google Apps Script 호출 실패", 502, { debug: (err as Error).message })
     }
 
-    // 4) Google Apps Script 응답이 2xx 또는 3xx => 성공
-    if (scriptRes.status < 400) {
+    // 4) Google Apps Script 응답이 2xx 또는 3xx ⇒ 성공 처리
+    if (isRedirectOrOk(scriptRes)) {
       return NextResponse.json({ success: true, message: "상담 신청이 접수되었습니다." })
     }
 
@@ -66,7 +67,7 @@ export async function POST(request: NextRequest) {
   } catch (err) {
     // 예상하지 못한 최상위 런타임 예외도 JSON으로 래핑
     return fail("서버 내부 오류가 발생했습니다.", 500, {
-      debug: (err as Error)?.message ?? String(err),
+      debug: (err as Error)?.stack ?? String(err),
     })
   }
 }
