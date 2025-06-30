@@ -18,27 +18,30 @@ export async function POST(request: NextRequest) {
     // Google Apps Script URL 확인
     const googleScriptUrl = process.env.NEXT_PUBLIC_GOOGLE_SCRIPT_URL || process.env.GOOGLE_SCRIPT_URL
 
-    if (!googleScriptUrl) {
-      console.log("[SERVER] Google Script URL이 설정되지 않음")
-      return NextResponse.json({ success: false, message: "Google Script URL이 설정되지 않았습니다." }, { status: 500 })
-    }
-
-    // ── NEW VALIDATION ────────────────────────
-    let parsedUrl: URL
-    try {
-      parsedUrl = new URL(googleScriptUrl.trim())
-    } catch {
-      console.error("[SERVER] 잘못된 Google Script URL:", googleScriptUrl)
+    if (!googleScriptUrl || googleScriptUrl === "REPLACE_WITH_YOUR_GOOGLE_SCRIPT_URL") {
+      console.log("[SERVER] Google Script URL이 설정되지 않음 또는 기본값")
       return NextResponse.json(
         {
           success: false,
-          message: "잘못된 Google Script URL이 설정되었습니다. Vercel 환경변수를 다시 확인해 주세요.",
+          message: "Google Apps Script가 설정되지 않았습니다. 관리자에게 문의하세요.",
+          debug: "GOOGLE_SCRIPT_URL_NOT_CONFIGURED",
         },
         { status: 500 },
       )
     }
-    console.log("[SERVER] Google Script URL:", parsedUrl.toString())
-    // ──────────────────────────────────────────
+
+    // URL 형식 검증
+    if (!googleScriptUrl.includes("script.google.com") || !googleScriptUrl.includes("/exec")) {
+      console.log("[SERVER] 잘못된 Google Script URL 형식:", googleScriptUrl)
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Google Apps Script URL 형식이 올바르지 않습니다.",
+          debug: "INVALID_GOOGLE_SCRIPT_URL_FORMAT",
+        },
+        { status: 500 },
+      )
+    }
 
     console.log("[SERVER] Google Script URL:", googleScriptUrl)
 
@@ -53,48 +56,73 @@ export async function POST(request: NextRequest) {
 
     console.log("[SERVER] Google Script로 전송할 데이터:", JSON.stringify(scriptData, null, 2))
 
-    /* ─────────────────────────────────────────
-       GOOGLE APPS SCRIPT 호출 (네트워크 요청)
-    ─────────────────────────────────────────── */
+    // Google Apps Script 호출
     let scriptRes: Response
     try {
-      scriptRes = await fetch(parsedUrl.toString(), {
+      console.log("[SERVER] Google Apps Script 호출 시작...")
+
+      scriptRes = await fetch(googleScriptUrl, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "User-Agent": "NextJS-App/1.0",
+        },
         body: JSON.stringify(scriptData),
         redirect: "follow",
       })
+
+      console.log("[SERVER] Google Apps Script 호출 완료, 상태:", scriptRes.status)
     } catch (netErr) {
       console.error("[SERVER] Google Script fetch 오류:", netErr)
+
+      // 네트워크 오류의 구체적인 원인 파악
+      let errorMessage = "Google Apps Script 호출 중 오류가 발생했습니다."
+      let debugInfo = ""
+
+      if (netErr instanceof Error) {
+        if (netErr.message.includes("Failed to fetch")) {
+          errorMessage =
+            "Google Apps Script에 연결할 수 없습니다. URL이 올바른지 확인하고, 스크립트가 배포되었는지 확인해주세요."
+          debugInfo = "FETCH_FAILED - 스크립트가 배포되지 않았거나 URL이 잘못되었을 수 있습니다."
+        } else if (netErr.message.includes("CORS")) {
+          errorMessage = "CORS 오류가 발생했습니다. Google Apps Script 설정을 확인해주세요."
+          debugInfo = "CORS_ERROR"
+        } else {
+          debugInfo = netErr.message
+        }
+      }
+
       return NextResponse.json(
         {
-          success: true,
-          message:
-            "일시적인 네트워크 문제로 데이터를 저장하지 못했지만, 상담 신청은 접수되었습니다. 담당자가 곧 연락드릴 예정입니다.",
-          warn: netErr instanceof Error ? netErr.message : String(netErr),
+          success: false,
+          message: errorMessage,
+          debug: debugInfo,
+          url: googleScriptUrl.substring(0, 50) + "...", // URL 일부만 표시 (보안)
         },
-        { status: 200 },
+        { status: 502 },
       )
     }
 
-    // ── 동일: 상태 코드 확인 & 성공 처리 ──
-    const rawBody = await scriptRes.text() // body 읽기 (디버그용)
+    // 응답 처리
+    const rawBody = await scriptRes.text()
     console.log("[SERVER] Google Script 응답 상태:", scriptRes.status)
     console.log("[SERVER] Google Script 응답 본문:", rawBody)
 
     if (scriptRes.status === 302 || scriptRes.status === 200) {
+      console.log("[SERVER] 상담 신청 성공")
       return NextResponse.json({
         success: true,
         message: "상담 신청이 접수되었습니다.",
       })
     }
 
+    // 실패 응답
     return NextResponse.json(
       {
         success: false,
         message: "상담 신청 처리 중 오류가 발생했습니다.",
-        scriptStatus: scriptRes.status,
-        scriptBody: rawBody,
+        debug: `Google Script returned status ${scriptRes.status}`,
+        scriptBody: rawBody.substring(0, 200), // 응답 일부만 표시
       },
       { status: 500 },
     )

@@ -103,7 +103,7 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
       console.log("서버 응답 상태:", response.status)
       console.log("서버 응답 헤더:", Object.fromEntries(response.headers.entries()))
 
-      // ---- read body safely ---
+      // 응답 본문 안전하게 읽기
       const contentType = response.headers.get("content-type") || ""
       let result: any = {}
 
@@ -119,7 +119,24 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
 
       if (!response.ok || !result?.success) {
         console.error("상담 신청 실패:", result)
-        alert(result?.message || "상담 신청에 실패했습니다.")
+
+        // 구체적인 오류 메시지 표시
+        let errorMessage = result?.message || "상담 신청에 실패했습니다."
+
+        if (result?.debug) {
+          console.error("디버그 정보:", result.debug)
+
+          // 개발자를 위한 구체적인 안내
+          if (result.debug === "GOOGLE_SCRIPT_URL_NOT_CONFIGURED") {
+            errorMessage = "Google Apps Script가 설정되지 않았습니다. 관리자에게 문의하세요."
+          } else if (result.debug === "INVALID_GOOGLE_SCRIPT_URL_FORMAT") {
+            errorMessage = "Google Apps Script 설정에 문제가 있습니다. 관리자에게 문의하세요."
+          } else if (result.debug.includes("FETCH_FAILED")) {
+            errorMessage = "Google Apps Script에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요."
+          }
+        }
+
+        alert(errorMessage)
         return
       }
 
@@ -132,12 +149,12 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
         message: "",
       })
 
-      // 성공 시
+      // 성공 시 페이지 이동
       router.push("/consultation-success")
       onClose()
     } catch (error) {
       console.error("상담 신청 오류:", error)
-      alert("상담 신청 중 오류가 발생했습니다.")
+      alert("상담 신청 중 오류가 발생했습니다. 네트워크 연결을 확인하고 다시 시도해 주세요.")
     } finally {
       setIsSubmitting(false)
     }
