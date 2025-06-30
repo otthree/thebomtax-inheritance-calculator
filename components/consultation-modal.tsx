@@ -145,33 +145,12 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center justify-between">
             <DialogTitle className="text-xl font-bold">전문가 상담 신청</DialogTitle>
           </div>
         </DialogHeader>
-
-        {/* 계산 결과 미리보기 */}
-        {calculationData && (
-          <div className="p-4 bg-slate-50 rounded-lg mb-4">
-            <h3 className="text-lg font-semibold mb-3">계산 결과 요약</h3>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="text-slate-600">총 재산가액:</span>
-                <span className="font-medium ml-2">
-                  {calculationData.totalAssets ? Math.round(calculationData.totalAssets).toLocaleString() : "0"}원
-                </span>
-              </div>
-              <div>
-                <span className="text-slate-600">최종 상속세:</span>
-                <span className="font-medium ml-2 text-red-600">
-                  {calculationData.finalTax ? Math.round(calculationData.finalTax).toLocaleString() : "0"}원
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
 
         <div className="space-y-6">
           <form onSubmit={handleSubmit} className="space-y-4">
