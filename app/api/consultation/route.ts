@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 
-/** 모든 에러 상황에서도 JSON만 반환 최종 */
+/** 모든 에러 상황에서도 JSON만 반환 최종바지 */
 const fail = (msg: string, status = 500, extra: Record<string, unknown> = {}) =>
   NextResponse.json({ success: false, message: msg, ...extra }, { status })
 
