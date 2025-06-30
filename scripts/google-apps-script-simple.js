@@ -1,5 +1,9 @@
 // 가장 간단한 Google Apps Script 코드 (헤더 설정 제거)
 
+var SpreadsheetApp = SpreadsheetApp
+var Utilities = Utilities
+var ContentService = ContentService
+
 function doPost(e) {
   try {
     console.log("POST 요청 받음:", e.postData.contents)
@@ -27,12 +31,10 @@ function doPost(e) {
     const kstTime = new Date(now.getTime() + 9 * 60 * 60 * 1000) // UTC+9
     const timestamp = Utilities.formatDate(kstTime, "GMT+9", "yyyy-MM-dd HH:mm:ss")
 
-    // 계산 결과 간단히 포맷팅
+    // 계산 결과 상세 포맷팅
     let calculationSummary = "계산 데이터 없음"
-    if (data.calculationData && data.calculationData.finalTax !== undefined) {
-      const finalTax = Math.round(data.calculationData.finalTax / 10000)
-      const totalAssets = Math.round(data.calculationData.totalAssets / 10000)
-      calculationSummary = `총재산: ${totalAssets.toLocaleString()}만원, 상속세: ${finalTax.toLocaleString()}만원`
+    if (data.calculationData) {
+      calculationSummary = formatCalculationData(data.calculationData)
     }
 
     // 데이터 배열 준비
@@ -132,4 +134,83 @@ function initializeSheet() {
   headerRange.setBackground("#f0f0f0")
 
   console.log("스프레드시트 초기화 완료")
+}
+
+// 계산 데이터를 상세하게 포맷팅하는 함수
+function formatCalculationData(calc) {
+  const formatNumber = (num) => {
+    if (!num || num === 0) return null
+    const rounded = Math.round(num / 10) * 10
+    return rounded.toLocaleString("ko-KR") + "원"
+  }
+
+  const formatBoolean = (bool, label) => {
+    return bool ? label : null
+  }
+
+  const result = []
+
+  // 재산 분류
+  const realEstate = formatNumber(calc.realEstateTotal)
+  const financial = formatNumber(calc.financialAssetsTotal)
+  const gift = formatNumber(calc.giftAssetsTotal)
+  const other = formatNumber(calc.otherAssetsTotal)
+  const totalAssets = formatNumber(calc.totalAssets)
+
+  if (realEstate) result.push(`부동산:${realEstate}`)
+  if (financial) result.push(`금융자산:${financial}`)
+  if (gift) result.push(`사전증여자산:${gift}`)
+  if (other) result.push(`기타자산:${other}`)
+  if (totalAssets) result.push(`총 재산가액:${totalAssets}`)
+
+  // 채무 분류
+  const funeral = formatNumber(calc.funeralExpenseTotal)
+  const financialDebt = formatNumber(calc.financialDebtTotal)
+  const taxArrears = formatNumber(calc.taxArrearsTotal)
+  const otherDebt = formatNumber(calc.otherDebtTotal)
+  const totalDebt = formatNumber(calc.totalDebt)
+
+  if (funeral) result.push(`장례비:${funeral}`)
+  if (financialDebt) result.push(`금융채무:${financialDebt}`)
+  if (taxArrears) result.push(`세금미납:${taxArrears}`)
+  if (otherDebt) result.push(`기타채무:${otherDebt}`)
+  if (totalDebt) result.push(`총 채무:${totalDebt}`)
+
+  // 순재산
+  const netAssets = formatNumber(calc.netAssets)
+  if (netAssets) result.push(`순재산가액:${netAssets}`)
+
+  // 공제 항목
+  const basicDeduction = formatBoolean(calc.basicDeduction, "일괄공제:500,000,000원")
+  const spouseDeduction = formatBoolean(calc.spouseDeduction, "배우자공제:500,000,000원")
+  const housingDeduction = formatBoolean(calc.housingDeduction, "동거주택 상속공제:600,000,000원")
+  const financialDeduction = formatNumber(calc.financialDeduction)
+  const totalDeductions = formatNumber(calc.totalDeductions)
+
+  if (basicDeduction) result.push(basicDeduction)
+  if (spouseDeduction) result.push(spouseDeduction)
+  if (housingDeduction) result.push(housingDeduction)
+  if (financialDeduction) result.push(`금융자산 상속공제:${financialDeduction}`)
+  if (totalDeductions) result.push(`총 공제액:${totalDeductions}`)
+
+  // 세액 계산
+  const taxableAmount = formatNumber(calc.taxableAmount)
+  const taxRate = calc.taxRate ? `${calc.taxRate.toFixed(1)}%` : null
+  const progressiveDeduction = formatNumber(calc.progressiveDeduction)
+  const calculatedTax = formatNumber(calc.calculatedTax)
+  const giftTaxCredit = formatNumber(calc.giftTaxCredit)
+  const reportTaxCredit = formatNumber(calc.reportTaxCredit)
+  const totalTaxCredit = formatNumber(calc.totalTaxCredit)
+  const finalTax = formatNumber(calc.finalTax)
+
+  if (taxableAmount) result.push(`과세표준:${taxableAmount}`)
+  if (taxRate) result.push(`적용 세율:${taxRate}`)
+  if (progressiveDeduction) result.push(`누진공제:${progressiveDeduction}`)
+  if (calculatedTax) result.push(`산출세액:${calculatedTax}`)
+  if (giftTaxCredit) result.push(`증여세액공제:${giftTaxCredit}`)
+  if (reportTaxCredit) result.push(`신고세액공제:${reportTaxCredit}`)
+  if (totalTaxCredit) result.push(`세액공제 합계:${totalTaxCredit}`)
+  if (finalTax) result.push(`최종 상속세:${finalTax}`)
+
+  return result.length > 0 ? result.join(" | ") : "계산 데이터 없음"
 }

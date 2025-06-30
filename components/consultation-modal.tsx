@@ -18,6 +18,25 @@ interface ConsultationModalProps {
     netAssets: number
     taxableAmount: number
     finalTax: number
+    realEstateTotal: number
+    financialAssetsTotal: number
+    giftAssetsTotal: number
+    otherAssetsTotal: number
+    financialDebtTotal: number
+    funeralExpenseTotal: number
+    taxArrearsTotal: number
+    otherDebtTotal: number
+    totalDeductions: number
+    financialDeduction: number
+    basicDeduction: boolean
+    spouseDeduction: boolean
+    housingDeduction: boolean
+    taxRate: number
+    progressiveDeduction: number
+    calculatedTax: number
+    giftTaxCredit: number
+    reportTaxCredit: number
+    totalTaxCredit: number
     [key: string]: any
   }
 }
