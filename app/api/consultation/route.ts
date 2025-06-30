@@ -1,15 +1,15 @@
 import { type NextRequest, NextResponse } from "next/server"
 
+/** 모든 에러 상황에서도 JSON만 반환 */
+const fail = (msg: string, status = 500, extra: Record<string, unknown> = {}) =>
+  NextResponse.json({ success: false, message: msg, ...extra }, { status })
+
 /**
  * 상담 신청 API
  * - 어떤 상황에서도 JSON(Response)만 반환
  * - Google Apps Script 302 리다이렉트를 성공으로 간주 이대현
  */
 export async function POST(request: NextRequest) {
-  // 공통 실패 응답 헬퍼 –– 절대 throw 하지 않음
-  const fail = (msg: string, status = 500, extra: Record<string, unknown> = {}) =>
-    NextResponse.json({ success: false, message: msg, ...extra }, { status })
-
   try {
     const body = await request.json().catch(() => ({}))
     const { name, phone, message = "", calculationData = null } = body
@@ -63,9 +63,9 @@ export async function POST(request: NextRequest) {
       scriptBody: raw.slice(0, 200),
     })
   } catch (err) {
-    // 최상위 예외도 JSON으로 래핑
+    // 예상하지 못한 최상위 런타임 예외도 JSON으로 래핑
     return fail("서버 내부 오류가 발생했습니다.", 500, {
-      debug: (err as Error).message,
+      debug: (err as Error)?.message ?? err,
     })
   }
 }
