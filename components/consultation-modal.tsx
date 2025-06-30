@@ -49,7 +49,6 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
     setIsSubmitting(true)
 
     try {
-      // 구글 시트로 데이터 전송 → Next.js API Route 경유
       const response = await fetch("/api/consultation", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -61,30 +60,17 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
         }),
       })
 
-      const contentType = response.headers.get("content-type") || ""
-      let result: { success: boolean; message?: string } = { success: false }
-
-      try {
-        if (contentType.includes("application/json")) {
-          result = await response.json()
-        } else {
-          const txt = await response.text()
-          result = { success: false, message: txt }
-        }
-      } catch (e) {
-        const txt = await response.text().catch(() => "")
-        result = { success: false, message: txt || "알 수 없는 오류가 발생했습니다." }
-      }
+      const result = await response.json()
 
       if (result.success) {
         router.push("/consultation-success")
         onClose()
       } else {
-        alert(result.message || "데이터 전송에 실패했습니다.")
+        alert(result.message || "상담 신청에 실패했습니다.")
       }
     } catch (error) {
       console.error("상담 신청 오류:", error)
-      alert("상담 신청 중 오류가 발생했습니다. 다시 시도해주세요.")
+      alert("상담 신청 중 오류가 발생했습니다.")
     } finally {
       setIsSubmitting(false)
     }
@@ -100,7 +86,6 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* 상담 신청 폼 */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 gap-4">
               <div>
