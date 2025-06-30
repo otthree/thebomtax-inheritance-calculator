@@ -103,15 +103,20 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
       console.log("서버 응답 상태:", response.status)
       console.log("서버 응답 헤더:", Object.fromEntries(response.headers.entries()))
 
-      // 응답 본문 읽기 ─ content-type 헤더가 없더라도 JSON 문자열이면 직접 파싱
-      const isJson = response.headers.get("content-type")?.includes("application/json")
+      // --- 응답 본문 읽기 ---------------------------------------------------
+      const raw = await response.text()
 
-      const text = await response.text()
-      const result: any = isJson ? JSON.parse(text) : { success: false }
+      let result: any = {}
+      try {
+        // content-type 헤더가 잘못돼도 JSON 형태면 직접 파싱 시도
+        result = JSON.parse(raw)
+      } catch {
+        // 파싱 실패 → 텍스트 그대로 로그
+        console.error("서버가 JSON이 아닌 값을 반환했습니다:", raw.slice(0, 200))
+        result = { success: false, message: raw }
+      }
 
-      console.log("서버 응답 데이터:", result)
-
-      if (!response.ok || !result?.success) {
+      if (!response.ok || result?.success === false) {
         console.error("상담 신청 실패:", result)
 
         // 구체적인 오류 메시지 표시
