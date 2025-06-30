@@ -2,6 +2,7 @@
 
 function doPost(e) {
   try {
+    console.log("=== Google Apps Script 시작 ===")
     console.log("POST 요청 받음:", e.postData.contents)
 
     // 스프레드시트 ID (본인의 스프레드시트 ID로 변경하세요)
@@ -9,7 +10,10 @@ function doPost(e) {
 
     // POST 데이터 파싱
     const data = JSON.parse(e.postData.contents)
-    console.log("파싱된 데이터:", data)
+    console.log("파싱된 데이터:", JSON.stringify(data, null, 2))
+    console.log("이름:", data.name)
+    console.log("전화번호:", data.phone)
+    console.log("상담내용:", data.message)
 
     // 스프레드시트 열기
     const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID)
@@ -35,8 +39,18 @@ function doPost(e) {
       calculationSummary = `총재산: ${totalAssets.toLocaleString()}만원, 상속세: ${finalTax.toLocaleString()}만원`
     }
 
-    // 데이터 배열 준비
-    const rowData = [timestamp, data.name || "", data.phone || "", data.message || "", calculationSummary]
+    // 데이터 배열 준비 - 빈 값 처리 개선
+    const name = data.name || ""
+    const phone = data.phone || ""
+    const message = data.message || ""
+
+    console.log("처리된 데이터:")
+    console.log("- 이름:", name)
+    console.log("- 전화번호:", phone)
+    console.log("- 상담내용:", message)
+    console.log("- 계산결과:", calculationSummary)
+
+    const rowData = [timestamp, name, phone, message, calculationSummary]
 
     console.log("추가할 데이터:", rowData)
 
@@ -46,12 +60,16 @@ function doPost(e) {
 
     // 각 셀에 개별적으로 값 설정
     sheet.getRange(newRowIndex, 1).setValue(timestamp)
-    sheet.getRange(newRowIndex, 2).setValue(data.name || "")
-    sheet.getRange(newRowIndex, 3).setValue(data.phone || "")
-    sheet.getRange(newRowIndex, 4).setValue(data.message || "")
+    sheet.getRange(newRowIndex, 2).setValue(name)
+    sheet.getRange(newRowIndex, 3).setValue(phone)
+    sheet.getRange(newRowIndex, 4).setValue(message)
     sheet.getRange(newRowIndex, 5).setValue(calculationSummary)
 
     console.log("데이터 추가 완료, 행:", newRowIndex)
+
+    // 추가된 데이터 확인
+    const addedData = sheet.getRange(newRowIndex, 1, 1, 5).getValues()[0]
+    console.log("실제 추가된 데이터:", addedData)
 
     // 성공 응답 (setHeaders 분리)
     const output = ContentService.createTextOutput(
@@ -59,6 +77,12 @@ function doPost(e) {
         success: true,
         message: "상담 신청이 접수되었습니다.",
         timestamp: timestamp,
+        data: {
+          name: name,
+          phone: phone,
+          message: message,
+          calculationSummary: calculationSummary,
+        },
       }),
     ).setMimeType(ContentService.MimeType.JSON)
 
@@ -77,6 +101,7 @@ function doPost(e) {
     return output
   } catch (error) {
     console.error("오류 발생:", error)
+    console.error("오류 스택:", error.stack)
 
     // 에러 응답
     const errorOutput = ContentService.createTextOutput(
@@ -84,6 +109,7 @@ function doPost(e) {
         success: false,
         message: "오류가 발생했습니다: " + error.toString(),
         error: error.toString(),
+        stack: error.stack,
       }),
     ).setMimeType(ContentService.MimeType.JSON)
 
@@ -107,12 +133,12 @@ function manualTest() {
   const testData = {
     postData: {
       contents: JSON.stringify({
-        name: "테스트 사용자2",
-        phone: "010-9876-5432",
-        message: "두 번째 테스트 상담 신청입니다.",
+        name: "테스트 사용자3",
+        phone: "010-1111-2222",
+        message: "세 번째 테스트 상담 신청입니다.",
         calculationData: {
-          totalAssets: 2000000000,
-          finalTax: 100000000,
+          totalAssets: 3000000000,
+          finalTax: 150000000,
         },
       }),
     },

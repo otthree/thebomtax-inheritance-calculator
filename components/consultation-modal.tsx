@@ -51,6 +51,7 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
   })
 
   const handleInputChange = (field: string, value: string) => {
+    console.log(`폼 필드 변경: ${field} = ${value}`)
     setFormData((prev) => ({
       ...prev,
       [field]: value,
@@ -60,30 +61,55 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    console.log("=== 상담 신청 제출 시작 ===")
+    console.log("현재 폼 데이터:", formData)
+
     if (!formData.name || !formData.phone) {
       alert("이름과 연락처는 필수 입력 항목입니다.")
+      return
+    }
+
+    if (!formData.name.trim()) {
+      alert("이름을 입력해주세요.")
+      return
+    }
+
+    if (!formData.phone.trim()) {
+      alert("연락처를 입력해주세요.")
       return
     }
 
     setIsSubmitting(true)
 
     try {
+      const submitData = {
+        name: formData.name.trim(),
+        phone: formData.phone.trim(),
+        message: formData.message.trim(),
+        calculationData: calculationData,
+      }
+
+      console.log("서버로 전송할 데이터:", JSON.stringify(submitData, null, 2))
+
       const response = await fetch("/api/consultation", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: formData.name,
-          phone: formData.phone,
-          message: formData.message,
-          calculationData: calculationData,
-        }),
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(submitData),
       })
+
+      console.log("서버 응답 상태:", response.status)
+      console.log("서버 응답 헤더:", Object.fromEntries(response.headers.entries()))
 
       // ---- read body safely ---
       const contentType = response.headers.get("content-type") || ""
       let result: any = {}
+
       if (contentType.includes("application/json")) {
         result = await response.json()
+        console.log("서버 응답 데이터:", result)
       } else {
         const raw = await response.text()
         console.error("Unexpected non-JSON response:", raw)
@@ -92,9 +118,19 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
       }
 
       if (!response.ok || !result?.success) {
+        console.error("상담 신청 실패:", result)
         alert(result?.message || "상담 신청에 실패했습니다.")
         return
       }
+
+      console.log("상담 신청 성공:", result)
+
+      // 폼 초기화
+      setFormData({
+        name: "",
+        phone: "",
+        message: "",
+      })
 
       // 성공 시
       router.push("/consultation-success")
@@ -116,6 +152,27 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
           </div>
         </DialogHeader>
 
+        {/* 계산 결과 미리보기 */}
+        {calculationData && (
+          <div className="p-4 bg-slate-50 rounded-lg mb-4">
+            <h3 className="text-lg font-semibold mb-3">계산 결과 요약</h3>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <span className="text-slate-600">총 재산가액:</span>
+                <span className="font-medium ml-2">
+                  {calculationData.totalAssets ? Math.round(calculationData.totalAssets).toLocaleString() : "0"}원
+                </span>
+              </div>
+              <div>
+                <span className="text-slate-600">최종 상속세:</span>
+                <span className="font-medium ml-2 text-red-600">
+                  {calculationData.finalTax ? Math.round(calculationData.finalTax).toLocaleString() : "0"}원
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="space-y-6">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 gap-4">
@@ -130,6 +187,7 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
                   value={formData.name}
                   onChange={(e) => handleInputChange("name", e.target.value)}
                   required
+                  disabled={isSubmitting}
                 />
               </div>
               <div>
@@ -143,6 +201,7 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
                   value={formData.phone}
                   onChange={(e) => handleInputChange("phone", e.target.value)}
                   required
+                  disabled={isSubmitting}
                 />
               </div>
             </div>
@@ -157,6 +216,7 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
                 rows={4}
                 value={formData.message}
                 onChange={(e) => handleInputChange("message", e.target.value)}
+                disabled={isSubmitting}
               />
             </div>
 
