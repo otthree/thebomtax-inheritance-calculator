@@ -1,8 +1,8 @@
 // 최종 수정된 Google Apps Script 코드
 
 var SpreadsheetApp = SpreadsheetApp
-var Utilities = Utilities
 var ContentService = ContentService
+var Utilities = Utilities
 
 function doPost(e) {
   try {
@@ -253,34 +253,34 @@ function manualTest() {
   const testData = {
     postData: {
       contents: JSON.stringify({
-        name: "테스트 사용자6",
+        name: "테스트 사용자7",
         phone: "010-1234-5678",
-        message: "여섯 번째 테스트 상담 신청입니다.",
+        message: "일곱 번째 테스트 상담 신청입니다.",
         calculationData: {
-          totalAssets: 1500000000,
-          totalDebt: 50000000,
-          netAssets: 1450000000,
-          taxableAmount: 950000000,
-          finalTax: 208440000,
-          realEstateTotal: 800000000,
-          financialAssetsTotal: 500000000,
-          giftAssetsTotal: 200000000,
+          totalAssets: 1000000000,
+          totalDebt: 0,
+          netAssets: 1000000000,
+          taxableAmount: 500000000,
+          finalTax: 67300000,
+          realEstateTotal: 600000000,
+          financialAssetsTotal: 400000000,
+          giftAssetsTotal: 0,
           otherAssetsTotal: 0,
-          financialDebtTotal: 30000000,
-          funeralExpenseTotal: 20000000,
+          financialDebtTotal: 0,
+          funeralExpenseTotal: 0,
           taxArrearsTotal: 0,
           otherDebtTotal: 0,
           totalDeductions: 500000000,
           financialDeduction: 0,
           basicDeduction: true,
           spouseDeduction: false,
-          housingDeduction: true,
-          taxRate: 30,
-          progressiveDeduction: 162000000,
-          calculatedTax: 285000000,
-          giftTaxCredit: 50000000,
-          reportTaxCredit: 26560000,
-          totalTaxCredit: 76560000,
+          housingDeduction: false,
+          taxRate: 20,
+          progressiveDeduction: 32700000,
+          calculatedTax: 100000000,
+          giftTaxCredit: 0,
+          reportTaxCredit: 32700000,
+          totalTaxCredit: 32700000,
         },
       }),
     },
