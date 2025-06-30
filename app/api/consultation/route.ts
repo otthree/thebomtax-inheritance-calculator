@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 
 /**
- * 상담 신청을 Google Apps Script 로 전달한다.
+ * 상담 신청을 Google Apps Script 로 전달한다. 이대현
  * 어떤 상황에서도 JSON 응답을 반환하여
  * 클라이언트가 `response.json()` 을 안전하게 호출할 수 있도록 한다.
  */
