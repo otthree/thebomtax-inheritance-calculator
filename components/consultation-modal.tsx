@@ -97,11 +97,13 @@ export function ConsultationModal({ calculationData }: ConsultationModalProps) {
 
       if (contentType && contentType.includes("application/json")) {
         result = await response.json()
-        console.log("서버 응답 데이터:", result)
       } else {
-        const text = await response.text()
-        console.log("서버 응답 텍스트:", text)
-        throw new Error("서버에서 JSON이 아닌 응답을 받았습니다.")
+        /* 서버가 HTML 500을 돌려줄 가능성은 이제 거의 없지만
+           방어적으로 텍스트만 받아서 사용자에게 안내 */
+        const raw = await response.text()
+        console.error("Non-JSON response:", raw.slice(0, 300))
+        alert("서버 오류가 발생했습니다. 다시 시도해 주세요.")
+        return
       }
 
       if (result.success) {

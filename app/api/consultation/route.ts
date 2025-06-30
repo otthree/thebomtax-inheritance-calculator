@@ -1,117 +1,90 @@
-import { NextResponse } from "next/server"
+import { NextResponse, type NextRequest } from "next/server"
 
-export async function POST(request: Request) {
+/*  
+  • Node 런타임 강제 (외부 fetch, console 사용)  
+  • 빌드 캐싱 방지
+*/
+export const runtime = "nodejs"
+export const dynamic = "force-dynamic"
+
+/**
+ * 상담 신청 POST
+ *  - 어떤 경우에도 JSON 만 반환
+ *  - Google Apps Script 의 302 리다이렉트(보안용)도 직접 따라가서 처리
+ */
+export async function POST(req: NextRequest) {
   try {
-    console.log("=== API 라우트 시작 ===")
+    /* 1. 요청 본문 파싱 (빈 바디‧잘못된 JSON 대비) */
+    let body: any = {}
+    try {
+      body = await req.json()
+    } catch {
+      return NextResponse.json({ success: false, message: "잘못된 요청 형식입니다." }, { status: 400 })
+    }
 
-    const body = await request.json()
-    console.log("클라이언트에서 받은 데이터:", JSON.stringify(body, null, 2))
+    const scriptUrl = process.env.NEXT_PUBLIC_GOOGLE_SCRIPT_URL || process.env.GOOGLE_SCRIPT_URL
 
-    const googleScriptUrl = process.env.NEXT_PUBLIC_GOOGLE_SCRIPT_URL || process.env.GOOGLE_SCRIPT_URL
-
-    if (!googleScriptUrl) {
-      console.log("Google Script URL이 설정되지 않음")
+    /* 2. 로컬/환경변수 미설정이면 바로 성공 응답 */
+    if (!scriptUrl) {
       return NextResponse.json({
         success: true,
-        message: "상담 신청이 접수되었습니다. (로컬 처리)",
-        data: body,
+        message: "로컬 환경 – 상담 신청이 접수되었습니다.",
+        echo: body,
       })
     }
 
-    console.log("Google Script URL:", googleScriptUrl)
-
-    // 전송할 데이터 준비
-    const dataToSend = {
-      name: body.name?.trim() || "",
-      phone: body.phone?.trim() || "",
-      message: body.message?.trim() || "",
-      calculationData: body.calculationData || null,
-      timestamp: new Date().toISOString(),
-    }
-
-    console.log("Google Script로 전송할 데이터:", JSON.stringify(dataToSend, null, 2))
-
-    // 첫 번째 요청
-    const response = await fetch(googleScriptUrl, {
+    /* 3. Google Apps Script 호출 (302 수동 처리) */
+    const gRes = await fetch(scriptUrl, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(dataToSend),
-      redirect: "manual", // 리다이렉트를 수동으로 처리
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      redirect: "manual",
     })
 
-    console.log("Google Script 응답 상태:", response.status)
-    console.log("Google Script 응답 헤더:", Object.fromEntries(response.headers.entries()))
-
-    let finalResponse = response
-
-    // 302 리다이렉트 처리
-    if (response.status === 302) {
-      const redirectUrl = response.headers.get("location")
-      console.log("리다이렉트 URL:", redirectUrl)
-
-      if (redirectUrl) {
-        console.log("리다이렉트 URL로 재요청 시작")
-        finalResponse = await fetch(redirectUrl, {
+    const isRedirect = gRes.status === 302
+    const finalRes = isRedirect
+      ? await fetch(gRes.headers.get("location") as string, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(dataToSend),
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
         })
-        console.log("리다이렉트 응답 상태:", finalResponse.status)
-      }
-    }
+      : gRes
 
-    const responseText = await finalResponse.text()
-    console.log("Google Script 응답 본문:", responseText)
+    /* 4. Google 응답을 텍스트로 우선 확보 */
+    const textPayload = await finalRes.text()
 
-    // JSON 응답인지 확인
-    let responseData
+    /* 5. JSON 파싱 시도 */
+    let parsed: any
     try {
-      responseData = JSON.parse(responseText)
-      console.log("파싱된 응답 데이터:", responseData)
-    } catch (parseError) {
-      console.log("JSON 파싱 실패, HTML 응답으로 추정")
-      // HTML 응답이면 성공으로 간주 (Google Apps Script의 특성)
-      responseData = {
-        success: true,
-        message: "상담 신청이 접수되었습니다.",
-        rawResponse: responseText.substring(0, 200) + "...",
-      }
+      parsed = JSON.parse(textPayload)
+    } catch {
+      parsed = null
     }
 
-    // 성공 응답 반환
+    /* 6. 성공으로 간주 */
     return NextResponse.json({
       success: true,
-      message: responseData.message || "상담 신청이 접수되었습니다.",
-      data: responseData.data || dataToSend,
-      debug: {
-        status: finalResponse.status,
-        redirected: response.status === 302,
-        responseType: responseData ? "JSON" : "HTML",
-      },
+      message: parsed?.message ?? "상담 신청이 접수되었습니다.",
+      googleStatus: finalRes.status,
+      redirected: isRedirect,
     })
-  } catch (error) {
-    console.error("API 라우트 오류:", error)
-    console.error("오류 스택:", error instanceof Error ? error.stack : "스택 없음")
-
+  } catch (err: any) {
+    /* 7. 어떤 예외라도 JSON 만 반환 */
     return NextResponse.json(
       {
         success: false,
         message: "서버 오류가 발생했습니다.",
-        error: error instanceof Error ? error.message : "알 수 없는 오류",
-        stack: error instanceof Error ? error.stack : undefined,
+        detail: err?.message ?? String(err),
       },
       { status: 500 },
     )
   }
 }
 
-export async function OPTIONS() {
+/* CORS pre-flight */
+export function OPTIONS() {
   return new NextResponse(null, {
-    status: 200,
+    status: 204,
     headers: {
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "POST, OPTIONS",
