@@ -3,7 +3,7 @@ import { type NextRequest, NextResponse } from "next/server"
 /**
  * 상담 신청 API
  * - 어떤 상황에서도 JSON(Response)만 반환
- * - Google Apps Script 302 리다이렉트를 성공으로 간주
+ * - Google Apps Script 302 리다이렉트를 성공으로 간주 이대현
  */
 export async function POST(request: NextRequest) {
   // 공통 실패 응답 헬퍼 –– 절대 throw 하지 않음
