@@ -49,13 +49,31 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
     setIsSubmitting(true)
 
     try {
-      // 간단한 지연 시뮬레이션
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      // 구글 시트로 데이터 전송
+      const response = await fetch(process.env.NEXT_PUBLIC_GOOGLE_SCRIPT_URL!, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          phone: formData.phone,
+          message: formData.message,
+          calculationData: calculationData,
+        }),
+      })
 
-      // 성공 페이지로 이동
-      router.push("/consultation-success")
-      onClose()
+      const result = await response.json()
+
+      if (result.success) {
+        // 성공 페이지로 이동
+        router.push("/consultation-success")
+        onClose()
+      } else {
+        throw new Error(result.message || "데이터 전송에 실패했습니다.")
+      }
     } catch (error) {
+      console.error("상담 신청 오류:", error)
       alert("상담 신청 중 오류가 발생했습니다. 다시 시도해주세요.")
     } finally {
       setIsSubmitting(false)
