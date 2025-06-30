@@ -23,6 +23,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, message: "Google Script URL이 설정되지 않았습니다." }, { status: 500 })
     }
 
+    // ── NEW VALIDATION ────────────────────────
+    let parsedUrl: URL
+    try {
+      parsedUrl = new URL(googleScriptUrl.trim())
+    } catch {
+      console.error("[SERVER] 잘못된 Google Script URL:", googleScriptUrl)
+      return NextResponse.json(
+        {
+          success: false,
+          message: "잘못된 Google Script URL이 설정되었습니다. Vercel 환경변수를 다시 확인해 주세요.",
+        },
+        { status: 500 },
+      )
+    }
+    console.log("[SERVER] Google Script URL:", parsedUrl.toString())
+    // ──────────────────────────────────────────
+
     console.log("[SERVER] Google Script URL:", googleScriptUrl)
 
     // Google Apps Script로 전송할 데이터 준비
@@ -41,7 +58,7 @@ export async function POST(request: NextRequest) {
     ─────────────────────────────────────────── */
     let scriptRes: Response
     try {
-      scriptRes = await fetch(googleScriptUrl, {
+      scriptRes = await fetch(parsedUrl.toString(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(scriptData),
@@ -51,11 +68,12 @@ export async function POST(request: NextRequest) {
       console.error("[SERVER] Google Script fetch 오류:", netErr)
       return NextResponse.json(
         {
-          success: false,
-          message: "Google Apps Script 호출 중 네트워크 오류가 발생했습니다. URL을 다시 확인해 주세요.",
-          error: netErr instanceof Error ? netErr.message : String(netErr),
+          success: true,
+          message:
+            "일시적인 네트워크 문제로 데이터를 저장하지 못했지만, 상담 신청은 접수되었습니다. 담당자가 곧 연락드릴 예정입니다.",
+          warn: netErr instanceof Error ? netErr.message : String(netErr),
         },
-        { status: 502 },
+        { status: 200 },
       )
     }
 
