@@ -422,7 +422,6 @@ export default function InheritanceTaxCalculator() {
                 <CardHeader></CardHeader>
                 <CardContent className="space-y-8">
                   <div>
-                    <h3 className="text-base font-semibold mb-4 text-slate-900">부동산</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
                         <Label htmlFor="realEstate" className="text-sm font-medium">
