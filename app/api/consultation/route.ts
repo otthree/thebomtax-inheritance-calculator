@@ -36,35 +36,52 @@ export async function POST(request: NextRequest) {
 
     console.log("[SERVER] Google Script로 전송할 데이터:", JSON.stringify(scriptData, null, 2))
 
-    // Google Apps Script 호출
-    const response = await fetch(googleScriptUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(scriptData),
-      redirect: "follow",
-    })
+    /* ─────────────────────────────────────────
+       GOOGLE APPS SCRIPT 호출 (네트워크 요청)
+    ─────────────────────────────────────────── */
+    let scriptRes: Response
+    try {
+      scriptRes = await fetch(googleScriptUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(scriptData),
+        redirect: "follow",
+      })
+    } catch (netErr) {
+      console.error("[SERVER] Google Script fetch 오류:", netErr)
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Google Apps Script 호출 중 네트워크 오류가 발생했습니다. URL을 다시 확인해 주세요.",
+          error: netErr instanceof Error ? netErr.message : String(netErr),
+        },
+        { status: 502 },
+      )
+    }
 
-    console.log("[SERVER] Google Script 응답 상태:", response.status)
-    console.log("[SERVER] Google Script 응답 헤더:", Object.fromEntries(response.headers.entries()))
+    // ── 동일: 상태 코드 확인 & 성공 처리 ──
+    const rawBody = await scriptRes.text() // body 읽기 (디버그용)
+    console.log("[SERVER] Google Script 응답 상태:", scriptRes.status)
+    console.log("[SERVER] Google Script 응답 본문:", rawBody)
 
-    const responseText = await response.text()
-    console.log("[SERVER] Google Script 응답 본문:", responseText)
-
-    // 302 리다이렉트나 성공 응답 모두 성공으로 처리
-    if (response.status === 302 || response.status === 200) {
-      console.log("[SERVER] 상담 신청 성공")
+    if (scriptRes.status === 302 || scriptRes.status === 200) {
       return NextResponse.json({
         success: true,
         message: "상담 신청이 접수되었습니다.",
       })
-    } else {
-      console.log("[SERVER] Google Script 오류:", response.status)
-      return NextResponse.json({ success: false, message: "상담 신청 처리 중 오류가 발생했습니다." }, { status: 500 })
     }
+
+    return NextResponse.json(
+      {
+        success: false,
+        message: "상담 신청 처리 중 오류가 발생했습니다.",
+        scriptStatus: scriptRes.status,
+        scriptBody: rawBody,
+      },
+      { status: 500 },
+    )
   } catch (error) {
-    console.error("[SERVER] 상담 신청 API 오류:", error)
+    console.error("[SERVER] 상담 신청 API 내부 오류:", error)
     return NextResponse.json(
       {
         success: false,
