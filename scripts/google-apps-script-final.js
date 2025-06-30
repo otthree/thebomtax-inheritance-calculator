@@ -1,8 +1,8 @@
 // 최종 수정된 Google Apps Script 코드
 
 var SpreadsheetApp = SpreadsheetApp
-var Utilities = Utilities
 var ContentService = ContentService
+var Utilities = Utilities
 
 function doPost(e) {
   try {
@@ -81,55 +81,44 @@ function doPost(e) {
     const addedData = sheet.getRange(newRowIndex, 1, 1, 5).getValues()[0]
     console.log("실제 추가된 데이터:", addedData)
 
-    // 성공 응답
-    const output = ContentService.createTextOutput(
-      JSON.stringify({
-        success: true,
-        message: "상담 신청이 접수되었습니다.",
-        timestamp: timestamp,
-        data: {
-          name: name,
-          phone: phone,
-          message: message,
-          calculationSummary: calculationSummary,
-        },
-        addedRow: newRowIndex,
-      }),
-    ).setMimeType(ContentService.MimeType.JSON)
+    // 성공 응답 - CORS 헤더 없이
+    const responseData = {
+      success: true,
+      message: "상담 신청이 접수되었습니다.",
+      timestamp: timestamp,
+      data: {
+        name: name,
+        phone: phone,
+        message: message,
+        calculationSummary: calculationSummary,
+      },
+      addedRow: newRowIndex,
+    }
 
-    // CORS 헤더 설정
-    output.setHeader("Access-Control-Allow-Origin", "*")
-    output.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
-    output.setHeader("Access-Control-Allow-Headers", "Content-Type")
+    console.log("응답 데이터:", JSON.stringify(responseData))
 
-    return output
+    return ContentService.createTextOutput(JSON.stringify(responseData)).setMimeType(ContentService.MimeType.JSON)
   } catch (error) {
     console.error("오류 발생:", error)
     console.error("오류 스택:", error.stack)
 
-    // 에러 응답
-    const errorOutput = ContentService.createTextOutput(
-      JSON.stringify({
-        success: false,
-        message: "오류가 발생했습니다: " + error.toString(),
-        error: error.toString(),
-        stack: error.stack,
-      }),
-    ).setMimeType(ContentService.MimeType.JSON)
+    // 에러 응답 - CORS 헤더 없이
+    const errorData = {
+      success: false,
+      message: "오류가 발생했습니다: " + error.toString(),
+      error: error.toString(),
+      stack: error.stack,
+    }
 
-    errorOutput.setHeader("Access-Control-Allow-Origin", "*")
+    console.log("에러 응답 데이터:", JSON.stringify(errorData))
 
-    return errorOutput
+    return ContentService.createTextOutput(JSON.stringify(errorData)).setMimeType(ContentService.MimeType.JSON)
   }
 }
 
-// CORS preflight 처리
+// CORS preflight 처리 - 단순화
 function doOptions() {
-  const output = ContentService.createTextOutput("")
-  output.setHeader("Access-Control-Allow-Origin", "*")
-  output.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
-  output.setHeader("Access-Control-Allow-Headers", "Content-Type")
-  return output
+  return ContentService.createTextOutput("").setMimeType(ContentService.MimeType.TEXT)
 }
 
 // 수동 테스트 함수
@@ -137,9 +126,9 @@ function manualTest() {
   const testData = {
     postData: {
       contents: JSON.stringify({
-        name: "테스트 사용자4",
+        name: "테스트 사용자5",
         phone: "010-1234-5678",
-        message: "네 번째 테스트 상담 신청입니다.",
+        message: "다섯 번째 테스트 상담 신청입니다.",
         calculationData: {
           totalAssets: 3000000000,
           finalTax: 150000000,
@@ -148,8 +137,13 @@ function manualTest() {
     },
   }
 
-  const result = doPost(testData)
-  console.log("테스트 결과:", result.getContent())
+  try {
+    const result = doPost(testData)
+    console.log("테스트 결과:", result.getContent())
+    console.log("테스트 성공!")
+  } catch (error) {
+    console.error("테스트 실패:", error)
+  }
 }
 
 // 스프레드시트 초기화 함수
