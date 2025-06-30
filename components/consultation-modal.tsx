@@ -61,7 +61,20 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
         }),
       })
 
-      const result = await response.json()
+      const contentType = response.headers.get("content-type") || ""
+      let result: { success: boolean; message?: string } = { success: false }
+
+      try {
+        if (contentType.includes("application/json")) {
+          result = await response.json()
+        } else {
+          const txt = await response.text()
+          result = { success: false, message: txt }
+        }
+      } catch (e) {
+        const txt = await response.text().catch(() => "")
+        result = { success: false, message: txt || "알 수 없는 오류가 발생했습니다." }
+      }
 
       if (result.success) {
         router.push("/consultation-success")
