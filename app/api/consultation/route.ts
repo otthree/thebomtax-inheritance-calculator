@@ -48,8 +48,9 @@ export async function POST(request: NextRequest) {
     }
 
     // 4) Google Apps Script 응답이 2xx 또는 3xx => 성공
-    if (isRedirectOrOk(scriptRes))
+    if (scriptRes.status < 400) {
       return NextResponse.json({ success: true, message: "상담 신청이 접수되었습니다." })
+    }
 
     // 5) 그 밖의 상태 → 실패 (본문이 없어도 catch 안 남)
     let raw = ""
@@ -65,7 +66,7 @@ export async function POST(request: NextRequest) {
   } catch (err) {
     // 예상하지 못한 최상위 런타임 예외도 JSON으로 래핑
     return fail("서버 내부 오류가 발생했습니다.", 500, {
-      debug: (err as Error)?.message ?? err,
+      debug: (err as Error)?.message ?? String(err),
     })
   }
 }
