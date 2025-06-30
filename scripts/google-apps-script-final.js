@@ -1,5 +1,9 @@
 // 최종 수정된 Google Apps Script 코드
 
+var SpreadsheetApp = SpreadsheetApp
+var Utilities = Utilities
+var ContentService = ContentService
+
 function doPost(e) {
   try {
     console.log("=== Google Apps Script 시작 ===")
@@ -40,30 +44,42 @@ function doPost(e) {
     }
 
     // 데이터 배열 준비 - 빈 값 처리 개선
-    const name = data.name || ""
-    const phone = data.phone || ""
-    const message = data.message || ""
+    const name = (data.name || "").toString().trim()
+    const phone = (data.phone || "").toString().trim()
+    const message = (data.message || "").toString().trim()
 
     console.log("처리된 데이터:")
-    console.log("- 이름:", name)
-    console.log("- 전화번호:", phone)
-    console.log("- 상담내용:", message)
+    console.log("- 이름:", `"${name}"`)
+    console.log("- 전화번호:", `"${phone}"`)
+    console.log("- 상담내용:", `"${message}"`)
     console.log("- 계산결과:", calculationSummary)
-
-    const rowData = [timestamp, name, phone, message, calculationSummary]
-
-    console.log("추가할 데이터:", rowData)
 
     // 마지막 행 다음에 데이터 추가
     const lastRow = sheet.getLastRow()
     const newRowIndex = lastRow + 1
 
-    // 각 셀에 개별적으로 값 설정
-    sheet.getRange(newRowIndex, 1).setValue(timestamp)
-    sheet.getRange(newRowIndex, 2).setValue(name)
-    sheet.getRange(newRowIndex, 3).setValue(phone)
-    sheet.getRange(newRowIndex, 4).setValue(message)
-    sheet.getRange(newRowIndex, 5).setValue(calculationSummary)
+    console.log("데이터 추가 시작, 행:", newRowIndex)
+
+    // 각 셀에 개별적으로 값 설정 - 더 안전한 방법
+    try {
+      sheet.getRange(newRowIndex, 1).setValue(timestamp)
+      console.log("1열 (시간) 추가 완료")
+
+      sheet.getRange(newRowIndex, 2).setValue(name)
+      console.log("2열 (이름) 추가 완료:", name)
+
+      sheet.getRange(newRowIndex, 3).setValue(phone)
+      console.log("3열 (전화번호) 추가 완료:", phone)
+
+      sheet.getRange(newRowIndex, 4).setValue(message)
+      console.log("4열 (상담내용) 추가 완료:", message)
+
+      sheet.getRange(newRowIndex, 5).setValue(calculationSummary)
+      console.log("5열 (계산결과) 추가 완료")
+    } catch (cellError) {
+      console.error("셀 추가 중 오류:", cellError)
+      throw cellError
+    }
 
     console.log("데이터 추가 완료, 행:", newRowIndex)
 
@@ -71,7 +87,7 @@ function doPost(e) {
     const addedData = sheet.getRange(newRowIndex, 1, 1, 5).getValues()[0]
     console.log("실제 추가된 데이터:", addedData)
 
-    // 성공 응답 (setHeaders 분리)
+    // 성공 응답
     const output = ContentService.createTextOutput(
       JSON.stringify({
         success: true,
@@ -83,20 +99,14 @@ function doPost(e) {
           message: message,
           calculationSummary: calculationSummary,
         },
+        addedRow: newRowIndex,
       }),
     ).setMimeType(ContentService.MimeType.JSON)
 
-    // 헤더 설정
-    const headers = {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
-    }
-
-    // 각 헤더를 개별적으로 설정
-    Object.keys(headers).forEach((key) => {
-      output.setHeader(key, headers[key])
-    })
+    // CORS 헤더 설정
+    output.setHeader("Access-Control-Allow-Origin", "*")
+    output.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
+    output.setHeader("Access-Control-Allow-Headers", "Content-Type")
 
     return output
   } catch (error) {
@@ -133,9 +143,9 @@ function manualTest() {
   const testData = {
     postData: {
       contents: JSON.stringify({
-        name: "테스트 사용자3",
-        phone: "010-1111-2222",
-        message: "세 번째 테스트 상담 신청입니다.",
+        name: "테스트 사용자4",
+        phone: "010-1234-5678",
+        message: "네 번째 테스트 상담 신청입니다.",
         calculationData: {
           totalAssets: 3000000000,
           finalTax: 150000000,
