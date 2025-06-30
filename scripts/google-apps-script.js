@@ -18,7 +18,7 @@ function doPost(e) {
     const data = JSON.parse(e.postData.contents)
 
     // 스프레드시트 ID (본인의 스프레드시트 ID로 변경)
-    const SPREADSHEET_ID = "YOUR_SPREADSHEET_ID_HERE"
+    const SPREADSHEET_ID = "1K-TAmgjS9icds44S1xJ741qQMAWbcnM1V6p8Ky6mg3w"
     const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getActiveSheet()
 
     // 헤더가 없으면 추가
