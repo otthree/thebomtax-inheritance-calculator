@@ -117,7 +117,7 @@ function testDoPost() {
 
 // 기존 잘못된 데이터 정리 함수
 function cleanupSheet() {
-  const SPREADSHEET_ID = "YOUR_SPREADSHEET_ID_HERE"
+  const SPREADSHEET_ID = "1K-TAmgjS9icds44S1xJ741qQMAWbcnM1V6p8Ky6mg3w"
   const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getActiveSheet()
 
   // 모든 데이터 삭제하고 헤더만 남기기
