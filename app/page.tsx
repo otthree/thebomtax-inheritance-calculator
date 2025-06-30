@@ -10,6 +10,7 @@ import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Calculator, FileText, Zap, TrendingUp, DollarSign, BarChart3, AlertTriangle, Phone } from "lucide-react"
 import Image from "next/image"
+import Link from "next/link"
 import ConsultationModal from "@/components/consultation-modal"
 import { Footer } from "@/components/footer"
 
@@ -34,7 +35,6 @@ export default function InheritanceTaxCalculator() {
     // 기타자산
     vehicle: "",
     insurance: "",
-    businessShare: "",
     otherAssets: "",
 
     // 2단계: 증여
@@ -91,12 +91,10 @@ export default function InheritanceTaxCalculator() {
     { number: 4, name: "공제혜택", active: currentStep >= 4 },
   ]
 
-  // 컴포넌트 마운트 시 초기 계산 실행
   useEffect(() => {
     calculateTax(formData)
   }, [])
 
-  // 배우자 체크 시 배우자 공제 자동 체크
   useEffect(() => {
     if (formData.isSpouse && !formData.spouseDeduction) {
       const newFormData = { ...formData, spouseDeduction: true }
@@ -106,37 +104,27 @@ export default function InheritanceTaxCalculator() {
   }, [formData, formData.isSpouse])
 
   const handleInputChange = (field: string, value: string) => {
-    // 숫자만 추출 (콤마 제거)
     const numericValue = value.replace(/[^0-9]/g, "")
-
-    // 숫자를 콤마가 포함된 형태로 포맷팅
     const formattedValue = numericValue ? Number(numericValue).toLocaleString("ko-KR") : ""
 
     const newFormData = { ...formData, [field]: formattedValue }
     setFormData(newFormData)
-
-    // 실시간 계산 (새로운 formData로)
     calculateTax(newFormData)
   }
 
   const calculateTax = (data: typeof formData) => {
-    console.log("=== 계산 시작 ===")
-    console.log("입력 데이터:", data)
-
-    // 만원 단위를 원 단위로 변환하는 함수
     const convertToWon = (value: string) => {
-      const result = Number.parseInt(value?.replace(/,/g, "") || "0") * 10000
+      const numericValue = value?.replace(/,/g, "") || "0"
+      const result = Number.parseInt(numericValue) * 10000
       return result
     }
 
-    // 부동산 = 주거용 부동산 + 상업용 부동산 + 토지 + 기타부동산
     const realEstateTotal =
       convertToWon(data.realEstate) +
       convertToWon(data.businessProperty) +
       convertToWon(data.land) +
       convertToWon(data.otherRealEstate)
 
-    // 금융자산 = 예금 + 적금 + 주식 + 펀드 + 채권 + 암호화폐
     const financialAssetsTotal =
       convertToWon(data.deposit) +
       convertToWon(data.savings) +
@@ -145,91 +133,61 @@ export default function InheritanceTaxCalculator() {
       convertToWon(data.bonds) +
       convertToWon(data.crypto)
 
-    // 사전증여자산 = 증여받은 재산
     const giftAssetsTotal = convertToWon(data.giftProperty)
 
-    // 기타자산 = 차량 + 보험금 + 사업지분 + 기타 자산
-    const otherAssetsTotal =
-      convertToWon(data.vehicle) +
-      convertToWon(data.insurance) +
-      convertToWon(data.businessShare) +
-      convertToWon(data.otherAssets)
+    const otherAssetsTotal = convertToWon(data.vehicle) + convertToWon(data.insurance) + convertToWon(data.otherAssets)
 
-    // 총재산가액 = 부동산 + 금융자산 + 사전증여자산 + 기타자산
     const totalAssets = realEstateTotal + financialAssetsTotal + giftAssetsTotal + otherAssetsTotal
 
-    // 금융채무 = 주택담보대출 + 신용대출 + 카드대금
     const financialDebtTotal =
       convertToWon(data.mortgageLoan) + convertToWon(data.creditLoan) + convertToWon(data.cardDebt)
 
-    // 장례비
-    const funeralExpenseTotal = convertToWon(data.funeralExpense)
-
-    // 세금미납
+    const funeralExpenseTotal = Math.min(convertToWon(data.funeralExpense), 15000000) // 1500만원 한도 적용
     const taxArrearsTotal = convertToWon(data.taxArrears)
-
-    // 기타채무
     const otherDebtTotal = convertToWon(data.otherDebt)
 
-    // 총채무 = 장례비 + 금융채무 + 세금미납 + 기타채무
     const totalDebt = funeralExpenseTotal + financialDebtTotal + taxArrearsTotal + otherDebtTotal
-
-    // 순 재산가액 = 총 재산가액 - 총 채무
     const netAssets = totalAssets - totalDebt
 
-    // 공제 계산
     let basicDeductionAmount = 0
     let spouseDeductionAmount = 0
     let housingDeductionAmount = 0
 
-    // 일괄공제를 체크해야만 기본 5억원 공제 적용
-    if (data.basicDeduction) basicDeductionAmount = 500000000 // 5억원
-    if (data.spouseDeduction) spouseDeductionAmount = 500000000 // 5억원
-    if (data.housingDeduction) housingDeductionAmount = 600000000 // 6억원
+    if (data.basicDeduction) basicDeductionAmount = 500000000
+    if (data.spouseDeduction) spouseDeductionAmount = 500000000
+    if (data.housingDeduction) housingDeductionAmount = 600000000
 
-    // 금융자산 공제 = min(순금융자산의 20%, 2억원)
     const netFinancialAssets = Math.max(0, financialAssetsTotal - financialDebtTotal)
-    const financialDeduction = Math.min(netFinancialAssets * 0.2, 200000000) // 최대 2억원
+    const financialDeduction = Math.min(netFinancialAssets * 0.2, 200000000)
 
-    // 총 공제액
     const totalDeductions = basicDeductionAmount + spouseDeductionAmount + housingDeductionAmount + financialDeduction
-
-    // 과세표준 = 순 재산가액 - 총 공제액
     const taxableAmount = Math.max(0, netAssets - totalDeductions)
 
-    // 세율 및 누진공제액 계산
     let taxRate = 0
     let progressiveDeduction = 0
 
     if (taxableAmount <= 100000000) {
-      // 1억원 이하: 10%
       taxRate = 10
       progressiveDeduction = 0
     } else if (taxableAmount <= 500000000) {
-      // 5억원 이하: 20%
       taxRate = 20
-      progressiveDeduction = 10000000 // 1천만원
+      progressiveDeduction = 10000000
     } else if (taxableAmount <= 1000000000) {
-      // 10억원 이하: 30%
       taxRate = 30
-      progressiveDeduction = 60000000 // 6천만원
+      progressiveDeduction = 60000000
     } else if (taxableAmount <= 3000000000) {
-      // 30억원 이하: 40%
       taxRate = 40
-      progressiveDeduction = 160000000 // 1억 6천만원
+      progressiveDeduction = 160000000
     } else {
-      // 30억원 초과: 50%
       taxRate = 50
-      progressiveDeduction = 460000000 // 4억 6천만원
+      progressiveDeduction = 460000000
     }
 
-    // 상속세 산출세액 = (상속세 과세표준 * 세율) - 누진공제액
-    const calculatedTax = Math.max(0, (taxableAmount * taxRate) / 100 - progressiveDeduction)
+    const taxCalculation = (taxableAmount * taxRate) / 100
+    const calculatedTax = Math.max(0, taxCalculation - progressiveDeduction)
 
-    // 증여세액공제 계산
     let giftTaxCredit = 0
     if (giftAssetsTotal > 0) {
-      // 배우자일 때: 사전증여자산 - 6억원, 아닐 시: 사전증여자산 - 5천만원
       const giftDeductionAmount = data.isSpouse ? 600000000 : 50000000
       const deductedGiftAmount = Math.max(0, giftAssetsTotal - giftDeductionAmount)
 
@@ -238,38 +196,28 @@ export default function InheritanceTaxCalculator() {
         let giftProgressiveDeduction = 0
 
         if (deductedGiftAmount <= 100000000) {
-          // 1억원 이하: 10%
           giftTaxRate = 10
           giftProgressiveDeduction = 0
         } else if (deductedGiftAmount <= 500000000) {
-          // 5억원 이하: 20%
           giftTaxRate = 20
-          giftProgressiveDeduction = 10000000 // 1천만원
+          giftProgressiveDeduction = 10000000
         } else if (deductedGiftAmount <= 1000000000) {
-          // 10억원 이하: 30%
           giftTaxRate = 30
-          giftProgressiveDeduction = 60000000 // 6천만원
+          giftProgressiveDeduction = 60000000
         } else if (deductedGiftAmount <= 3000000000) {
-          // 30억원 이하: 40%
           giftTaxRate = 40
-          giftProgressiveDeduction = 160000000 // 1억 6천만원
+          giftProgressiveDeduction = 160000000
         } else {
-          // 30억원 초과: 50%
           giftTaxRate = 50
-          giftProgressiveDeduction = 460000000 // 4억 6천만원
+          giftProgressiveDeduction = 460000000
         }
 
         giftTaxCredit = Math.max(0, (deductedGiftAmount * giftTaxRate) / 100 - giftProgressiveDeduction)
       }
     }
 
-    // 신고세액공제 = 산출세액의 3%
     const reportTaxCredit = calculatedTax * 0.03
-
-    // 세액공제 합계
     const totalTaxCredit = giftTaxCredit + reportTaxCredit
-
-    // 최종 상속세 = 산출세액 - 세액공제 합계
     const finalTax = Math.max(0, calculatedTax - totalTaxCredit)
 
     const result = {
@@ -296,17 +244,10 @@ export default function InheritanceTaxCalculator() {
       finalTax,
     }
 
-    console.log("=== 계산 결과 ===")
-    console.log("총 재산가액:", totalAssets)
-    console.log("총 채무:", totalDebt)
-    console.log("최종 상속세:", finalTax)
-    console.log("전체 결과:", result)
-
     setCalculationResult(result)
   }
 
   const formatNumber = (num: number) => {
-    // 10원 단위까지 반올림
     const rounded = Math.round(num / 10) * 10
     return rounded.toLocaleString("ko-KR")
   }
@@ -330,53 +271,65 @@ export default function InheritanceTaxCalculator() {
   }
 
   const handleCalculate = () => {
-    // 계산 데이터를 localStorage에 저장
     const calculationData = {
       formData,
       calculationResult,
       timestamp: new Date().toISOString(),
     }
+
     localStorage.setItem("inheritanceTaxCalculation", JSON.stringify(calculationData))
 
-    // 결과 페이지로 이동
-    router.push("/result")
+    // router.push 대신 window.location.href 사용
+    window.location.href = "/result"
   }
 
-  // 상담 모달에 전달할 계산 데이터 - 간단하게 정리
   const consultationData = {
     totalAssets: calculationResult.totalAssets,
     totalDebt: calculationResult.totalDebt,
     netAssets: calculationResult.netAssets,
-    taxableAmount: calculationResult.taxableAmount,
-    calculatedTax: calculationResult.calculatedTax,
-    finalTax: calculationResult.finalTax,
+    realEstateTotal: calculationResult.realEstateTotal,
+    financialAssetsTotal: calculationResult.financialAssetsTotal,
+    giftAssetsTotal: calculationResult.giftAssetsTotal,
+    otherAssetsTotal: calculationResult.otherAssetsTotal,
+    financialDebtTotal: calculationResult.financialDebtTotal,
+    funeralExpenseTotal: calculationResult.funeralExpenseTotal,
+    taxArrearsTotal: calculationResult.taxArrearsTotal,
+    otherDebtTotal: calculationResult.otherDebtTotal,
+    totalDeductions: calculationResult.totalDeductions,
+    financialDeduction: calculationResult.financialDeduction,
     basicDeduction: formData.basicDeduction,
     spouseDeduction: formData.spouseDeduction,
     housingDeduction: formData.housingDeduction,
+    taxableAmount: calculationResult.taxableAmount,
+    taxRate: calculationResult.taxRate,
+    progressiveDeduction: calculationResult.progressiveDeduction,
+    calculatedTax: calculationResult.calculatedTax,
+    giftTaxCredit: calculationResult.giftTaxCredit,
+    reportTaxCredit: calculationResult.reportTaxCredit,
+    totalTaxCredit: calculationResult.totalTaxCredit,
+    finalTax: calculationResult.finalTax,
   }
 
   return (
     <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nanum Gothic', sans-serif" }}>
-      {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
-            {/* Logo */}
             <div className="flex items-center">
               <div className="flex-shrink-0 flex items-center">
-                <Image
-                  src="/logo-deobom-blue.png"
-                  alt="세무법인 더봄"
-                  width={240}
-                  height={72}
-                  className="h-10 w-auto"
-                />
+                <Link href="/">
+                  <Image
+                    src="/logo-deobom-blue.png"
+                    alt="세무법인 더봄"
+                    width={240}
+                    height={72}
+                    className="h-10 w-auto"
+                  />
+                </Link>
               </div>
             </div>
 
-            {/* Right side buttons */}
             <div className="flex items-center space-x-4">
-              {/* 데스크톱에서만 전화번호 표시 */}
               <div className="hidden md:flex items-center space-x-2 text-slate-600">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path
@@ -396,7 +349,6 @@ export default function InheritanceTaxCalculator() {
               </Button>
             </div>
 
-            {/* Mobile menu button */}
             <div className="md:hidden">
               <Button variant="ghost" size="sm">
                 <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -408,7 +360,6 @@ export default function InheritanceTaxCalculator() {
         </div>
       </header>
 
-      {/* Sub Header */}
       <div className="bg-slate-50 border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <div className="flex items-center justify-between">
@@ -436,7 +387,6 @@ export default function InheritanceTaxCalculator() {
 
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* 계산기 섹션 */}
           <div className="lg:col-span-2">
             <Card className="bg-gradient-to-r from-slate-700 to-slate-800 text-white">
               <CardHeader>
@@ -467,12 +417,10 @@ export default function InheritanceTaxCalculator() {
               </CardHeader>
             </Card>
 
-            {/* 단계별 입력 폼 */}
             {currentStep === 1 && (
               <Card className="mt-6">
                 <CardHeader></CardHeader>
                 <CardContent className="space-y-8">
-                  {/* 부동산 섹션 */}
                   <div>
                     <h3 className="text-base font-semibold mb-4 text-slate-900">부동산</h3>
                     <p className="text-sm text-gray-600 mb-4">주거용, 상업용, 토지 등 부동산 자산을 입력해주세요</p>
@@ -528,7 +476,6 @@ export default function InheritanceTaxCalculator() {
                     </div>
                   </div>
 
-                  {/* 금융자산 섹션 */}
                   <div>
                     <h3 className="text-base font-semibold mb-4 text-slate-900">금융자산</h3>
                     <p className="text-sm text-gray-600 mb-4">예금, 주식, 펀드 등 금융자산을 입력해주세요</p>
@@ -602,7 +549,6 @@ export default function InheritanceTaxCalculator() {
                     </div>
                   </div>
 
-                  {/* 기타 자산 섹션 */}
                   <div>
                     <h3 className="text-base font-semibold mb-4 text-slate-900">기타 자산</h3>
                     <p className="text-sm text-gray-600 mb-4">대여금, 차량 등 기타 자산을 입력해주세요</p>
@@ -627,17 +573,6 @@ export default function InheritanceTaxCalculator() {
                           placeholder="예: 3,000"
                           value={formData.insurance}
                           onChange={(e) => handleInputChange("insurance", e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="businessShare" className="text-sm font-medium">
-                          사업지분 (만원)
-                        </Label>
-                        <Input
-                          id="businessShare"
-                          placeholder="예: 1,000"
-                          value={formData.businessShare}
-                          onChange={(e) => handleInputChange("businessShare", e.target.value)}
                         />
                       </div>
                       <div>
@@ -763,7 +698,7 @@ export default function InheritanceTaxCalculator() {
                     </div>
                     <div>
                       <Label htmlFor="funeralExpense" className="text-sm font-medium">
-                        장례비 (만원)
+                        장례비 (1500만원 한도) (만원)
                       </Label>
                       <Input
                         id="funeralExpense"
@@ -851,8 +786,7 @@ export default function InheritanceTaxCalculator() {
                         <label htmlFor="spouseDeduction" className="text-base font-medium text-gray-900">
                           배우자 공제
                         </label>
-                        <p className="text-sm text-gray-600">5억원 (배우자가 있는 경우)</p>
-                        <p className="text-sm text-blue-600 font-medium">배우자 상속분에 경우 최소 5억원 보장</p>
+                        <p className="text-sm text-gray-600">배우자 상속분에 경우 최소 5억원 보장</p>
                       </div>
                     </div>
 
@@ -897,7 +831,6 @@ export default function InheritanceTaxCalculator() {
             )}
           </div>
 
-          {/* 실시간 계산 결과 */}
           <div className="lg:col-span-1">
             <Card className="bg-white rounded-lg overflow-hidden">
               <CardHeader className="bg-slate-800 text-white rounded-t-lg py-3">
@@ -975,7 +908,6 @@ export default function InheritanceTaxCalculator() {
                     <div className="mt-6 pt-6 border-t border-slate-200">
                       <h3 className="text-lg font-semibold mb-4 text-slate-900">계산 과정 상세</h3>
 
-                      {/* 1단계: 총 재산가액 계산 */}
                       <div className="mb-6 bg-slate-50 rounded-lg p-4 border-l-4 border-blue-500">
                         <h4 className="font-medium text-blue-700 mb-3">1단계: 총 재산가액 계산</h4>
                         <div className="space-y-2 text-sm">
@@ -1004,7 +936,6 @@ export default function InheritanceTaxCalculator() {
                         </div>
                       </div>
 
-                      {/* 2단계: 총 채무 계산 */}
                       <div className="mb-6 bg-slate-50 rounded-lg p-4 border-l-4 border-red-500">
                         <h4 className="font-medium text-red-700 mb-3">2단계: 총 채무 계산</h4>
                         <div className="space-y-2 text-sm">
@@ -1035,7 +966,6 @@ export default function InheritanceTaxCalculator() {
                         </div>
                       </div>
 
-                      {/* 3단계: 순 재산가액 계산 */}
                       <div className="mb-6 bg-slate-50 rounded-lg p-4 border-l-4 border-green-500">
                         <h4 className="font-medium text-green-700 mb-3">3단계: 순 재산가액 계산</h4>
                         <div className="space-y-2 text-sm">
@@ -1050,7 +980,6 @@ export default function InheritanceTaxCalculator() {
                         </div>
                       </div>
 
-                      {/* 4단계: 공제 계산 */}
                       <div className="mb-6 bg-slate-50 rounded-lg p-4 border-l-4 border-purple-500">
                         <h4 className="font-medium text-purple-700 mb-3">4단계: 공제 계산</h4>
                         <div className="space-y-2 text-sm">
@@ -1079,7 +1008,6 @@ export default function InheritanceTaxCalculator() {
                         </div>
                       </div>
 
-                      {/* 5단계: 과세표준 계산 */}
                       <div className="mb-6 bg-slate-50 rounded-lg p-4 border-l-4 border-orange-500">
                         <h4 className="font-medium text-orange-700 mb-3">5단계: 과세표준 계산</h4>
                         <div className="space-y-2 text-sm">
@@ -1095,7 +1023,6 @@ export default function InheritanceTaxCalculator() {
                         </div>
                       </div>
 
-                      {/* 6단계: 세율 적용 */}
                       <div className="mb-6 bg-slate-50 rounded-lg p-4 border-l-4 border-blue-500">
                         <h4 className="font-medium text-blue-700 mb-3">6단계: 세율 적용</h4>
                         <div className="space-y-2 text-sm">
@@ -1120,7 +1047,6 @@ export default function InheritanceTaxCalculator() {
                         </div>
                       </div>
 
-                      {/* 7단계: 세액공제 */}
                       <div className="mb-6 bg-slate-50 rounded-lg p-4 border-l-4 border-indigo-500">
                         <h4 className="font-medium text-indigo-700 mb-3">7단계: 세액공제</h4>
                         <div className="space-y-2 text-sm">
@@ -1143,7 +1069,6 @@ export default function InheritanceTaxCalculator() {
                         </div>
                       </div>
 
-                      {/* 2025년 상속세율 */}
                       <div className="mb-6 bg-slate-50 rounded-lg p-4">
                         <h4 className="font-medium mb-3 flex items-center text-slate-900">
                           <span className="mr-2">📊</span>
@@ -1164,7 +1089,6 @@ export default function InheritanceTaxCalculator() {
                         </div>
                       </div>
 
-                      {/* 최종 계산 결과 */}
                       <div className="bg-gradient-to-r from-slate-700 to-slate-800 rounded-lg p-4 text-center text-white">
                         <div className="flex items-center justify-center mb-2">
                           <span className="mr-2">🧮</span>
@@ -1186,7 +1110,6 @@ export default function InheritanceTaxCalculator() {
           </div>
         </div>
 
-        {/* 상속세 계산 안내 */}
         <div className="mt-16">
           <h2 className="text-2xl font-bold text-center mb-12">상속세 계산 안내</h2>
 
@@ -1295,7 +1218,6 @@ export default function InheritanceTaxCalculator() {
         </div>
       </div>
 
-      {/* 모바일 전화 버튼 - 고정 위치 */}
       <div className="md:hidden fixed bottom-6 right-6 z-50">
         <a
           href="tel:02-336-0309"
@@ -1306,14 +1228,12 @@ export default function InheritanceTaxCalculator() {
         </a>
       </div>
 
-      {/* 상담 모달 */}
       <ConsultationModal
         isOpen={isConsultationModalOpen}
         onClose={() => setIsConsultationModalOpen(false)}
         calculationData={consultationData}
       />
 
-      {/* Footer 추가 */}
       <Footer />
     </div>
   )

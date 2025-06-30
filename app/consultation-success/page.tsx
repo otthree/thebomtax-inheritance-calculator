@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
+import Link from "next/link"
 import { CheckCircle, Phone, ArrowLeft, ExternalLink } from "lucide-react"
 import { Footer } from "@/components/footer"
 
@@ -26,7 +27,15 @@ export default function ConsultationSuccessPage() {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
               <div className="flex-shrink-0 flex items-center">
-                <Image src="/logo-deobom.png" alt="세무법인 더봄" width={200} height={60} className="h-10 w-auto" />
+                <Link href="/">
+                  <Image
+                    src="/logo-deobom-blue.png"
+                    alt="세무법인 더봄"
+                    width={240}
+                    height={72}
+                    className="h-10 w-auto"
+                  />
+                </Link>
               </div>
             </div>
 

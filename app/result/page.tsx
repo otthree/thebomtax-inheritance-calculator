@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertTriangle, Share2, Copy, Phone } from "lucide-react"
 import Image from "next/image"
+import Link from "next/link"
 import ConsultationModal from "@/components/consultation-modal"
 import { Footer } from "@/components/footer"
 
@@ -26,7 +27,6 @@ interface FormData {
   vehicle: string
   lifeInsurance: string
   pensionInsurance: string
-  businessShare: string
   jewelry: string
   otherAssets: string
   mortgageLoan: string
@@ -60,6 +60,11 @@ interface CalculationResult {
   taxRate: number
   progressiveDeduction: number
   finalTax: number
+  calculatedTax?: number
+  giftTaxCredit?: number
+  reportTaxCredit?: number
+  totalTaxCredit?: number
+  giftAssetsTotal?: number
 }
 
 interface CalculationData {
@@ -79,33 +84,27 @@ export default function ResultPage() {
   const [showShareOptions, setShowShareOptions] = useState(false)
 
   useEffect(() => {
-    // URL 파라미터에서 데이터 확인
     const sharedData = searchParams.get("data")
 
     if (sharedData) {
       try {
-        // URL에서 공유된 데이터 디코딩
         const decodedData = JSON.parse(decodeURIComponent(sharedData))
         setCalculationData(decodedData)
       } catch (error) {
-        console.error("공유된 데이터 파싱 오류:", error)
         router.push("/")
         return
       }
     } else {
-      // localStorage에서 계산 데이터 가져오기
       const savedData = localStorage.getItem("inheritanceTaxCalculation")
       if (savedData) {
         try {
           const data = JSON.parse(savedData)
           setCalculationData(data)
         } catch (error) {
-          console.error("데이터 파싱 오류:", error)
           router.push("/")
           return
         }
       } else {
-        // 데이터가 없으면 메인 페이지로 리다이렉트
         router.push("/")
         return
       }
@@ -114,7 +113,6 @@ export default function ResultPage() {
   }, [])
 
   const formatNumber = (num: number) => {
-    // 10원 단위까지 반올림
     const rounded = Math.round(num / 10) * 10
     return rounded.toLocaleString("ko-KR")
   }
@@ -149,7 +147,6 @@ export default function ResultPage() {
         setShowShareOptions(false)
       }, 2000)
     } catch (error) {
-      console.error("링크 복사 실패:", error)
       alert("링크 복사에 실패했습니다.")
     } finally {
       setIsSharing(false)
@@ -174,39 +171,39 @@ export default function ResultPage() {
       if (navigator.share) {
         await navigator.share(shareData)
       } else {
-        // 폴백: 클립보드 복사
         await handleCopyLink()
       }
     } catch (error) {
-      console.error("공유 실패:", error)
+      // 공유 실패 시 무시
     }
   }
 
-  // 상담 모달에 전달할 계산 데이터 (모든 상세 정보 포함)
   const consultationCalculationData = calculationData
     ? {
-        totalAssets: calculationData.calculationResult.totalAssets,
-        totalDebt: calculationData.calculationResult.totalDebt,
-        basicDeduction: calculationData.formData.basicDeduction,
-        spouseDeduction: calculationData.formData.spouseDeduction,
-        housingDeduction: calculationData.formData.housingDeduction,
-        financialDeduction: calculationData.calculationResult.financialDeduction,
-        finalTax: calculationData.calculationResult.finalTax,
-        realEstateTotal: calculationData.calculationResult.realEstateTotal,
-        financialAssetsTotal: calculationData.calculationResult.financialAssetsTotal,
-        insuranceTotal: calculationData.calculationResult.insuranceTotal,
-        businessAssetsTotal: calculationData.calculationResult.businessAssetsTotal,
-        movableAssetsTotal: calculationData.calculationResult.movableAssetsTotal,
-        otherAssetsTotal: calculationData.calculationResult.otherAssetsTotal,
-        financialDebtTotal: calculationData.calculationResult.financialDebtTotal,
-        funeralExpenseTotal: calculationData.calculationResult.funeralExpenseTotal,
-        taxArrearsTotal: calculationData.calculationResult.taxArrearsTotal,
-        otherDebtTotal: calculationData.calculationResult.otherDebtTotal,
-        netAssets: calculationData.calculationResult.netAssets,
-        totalDeductions: calculationData.calculationResult.totalDeductions,
-        taxableAmount: calculationData.calculationResult.taxableAmount,
-        taxRate: calculationData.calculationResult.taxRate,
-        progressiveDeduction: calculationData.calculationResult.progressiveDeduction,
+        totalAssets: calculationData.calculationResult.totalAssets || 0,
+        totalDebt: calculationData.calculationResult.totalDebt || 0,
+        netAssets: calculationData.calculationResult.netAssets || 0,
+        taxableAmount: calculationData.calculationResult.taxableAmount || 0,
+        taxRate: calculationData.calculationResult.taxRate || 0,
+        progressiveDeduction: calculationData.calculationResult.progressiveDeduction || 0,
+        finalTax: calculationData.calculationResult.finalTax || 0,
+        basicDeduction: calculationData.formData.basicDeduction || false,
+        spouseDeduction: calculationData.formData.spouseDeduction || false,
+        housingDeduction: calculationData.formData.housingDeduction || false,
+        realEstateTotal: calculationData.calculationResult.realEstateTotal || 0,
+        financialAssetsTotal: calculationData.calculationResult.financialAssetsTotal || 0,
+        giftAssetsTotal: calculationData.calculationResult.giftAssetsTotal || 0,
+        otherAssetsTotal: calculationData.calculationResult.otherAssetsTotal || 0,
+        financialDebtTotal: calculationData.calculationResult.financialDebtTotal || 0,
+        funeralExpenseTotal: calculationData.calculationResult.funeralExpenseTotal || 0,
+        taxArrearsTotal: calculationData.calculationResult.taxArrearsTotal || 0,
+        otherDebtTotal: calculationData.calculationResult.otherDebtTotal || 0,
+        totalDeductions: calculationData.calculationResult.totalDeductions || 0,
+        financialDeduction: calculationData.calculationResult.financialDeduction || 0,
+        calculatedTax: calculationData.calculationResult.calculatedTax || 0,
+        giftTaxCredit: calculationData.calculationResult.giftTaxCredit || 0,
+        reportTaxCredit: calculationData.calculationResult.reportTaxCredit || 0,
+        totalTaxCredit: calculationData.calculationResult.totalTaxCredit || 0,
       }
     : undefined
 
@@ -234,27 +231,28 @@ export default function ResultPage() {
     )
   }
 
+  const { calculationResult } = calculationData
+
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
             <div className="flex items-center">
               <div className="flex-shrink-0 flex items-center">
-                <Image
-                  src="/logo-deobom-blue.png"
-                  alt="세무법인 더봄"
-                  width={240}
-                  height={72}
-                  className="h-10 w-auto"
-                />
+                <Link href="/">
+                  <Image
+                    src="/logo-deobom-blue.png"
+                    alt="세무법인 더봄"
+                    width={240}
+                    height={72}
+                    className="h-10 w-auto"
+                  />
+                </Link>
               </div>
             </div>
 
-            {/* Right side buttons */}
             <div className="flex items-center space-x-4">
-              {/* 데스크톱에서만 전화번호 표시 */}
               <div className="hidden md:flex items-center space-x-2 text-slate-600">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path
@@ -284,7 +282,6 @@ export default function ResultPage() {
         </div>
       </header>
 
-      {/* Sub Header */}
       <div className="bg-slate-50 border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <div className="flex items-center justify-between">
@@ -296,7 +293,6 @@ export default function ResultPage() {
         </div>
       </div>
 
-      {/* 결과 페이지 */}
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-2xl font-bold text-slate-900">상속세 계산 결과</h1>
@@ -309,7 +305,6 @@ export default function ResultPage() {
           </Button>
         </div>
 
-        {/* 최종 상속세 결과 */}
         <Card className="mb-8">
           <CardContent className="text-center py-8">
             <p className="text-lg text-slate-600 mb-2">최종 상속세</p>
@@ -324,7 +319,6 @@ export default function ResultPage() {
           </CardContent>
         </Card>
 
-        {/* 상속세 계산 과정 */}
         <Card className="mb-8">
           <CardHeader>
             <CardTitle className="text-lg">상속세 계산 과정</CardTitle>
@@ -365,7 +359,6 @@ export default function ResultPage() {
           </CardContent>
         </Card>
 
-        {/* 액션 버튼들 */}
         <div className="flex justify-center gap-4 mb-8">
           <Button
             className="bg-slate-700 hover:bg-slate-800 text-white px-6 py-2"
@@ -374,7 +367,6 @@ export default function ResultPage() {
             💬 전문가상담
           </Button>
 
-          {/* 공유 버튼 그룹 */}
           <div className="relative">
             <Button
               className="bg-slate-700 hover:bg-slate-800 text-white px-6 py-2"
@@ -391,7 +383,6 @@ export default function ResultPage() {
               )}
             </Button>
 
-            {/* 공유 옵션 드롭다운 */}
             {showShareOptions && (
               <div className="absolute top-full mt-2 right-0 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-48">
                 <div className="p-2">
@@ -420,7 +411,6 @@ export default function ResultPage() {
           </div>
         </div>
 
-        {/* 공유 안내 */}
         {searchParams.get("data") && (
           <Alert className="mb-8 bg-blue-50 border-blue-200">
             <Share2 className="h-4 w-4 text-blue-600" />
@@ -432,7 +422,6 @@ export default function ResultPage() {
           </Alert>
         )}
 
-        {/* 수수료 안내 섹션 */}
         <Card className="mb-8 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
           <CardContent className="text-center py-6">
             <h3 className="text-lg font-semibold text-slate-900 mb-3">상속세 수수료가 궁금하신가요?</h3>
@@ -443,7 +432,6 @@ export default function ResultPage() {
           </CardContent>
         </Card>
 
-        {/* 주의사항 */}
         <Alert className="bg-yellow-50 border-yellow-300 mb-8">
           <AlertTriangle className="h-4 w-4 text-yellow-600" />
           <AlertDescription className="text-yellow-800">
@@ -457,7 +445,6 @@ export default function ResultPage() {
         </Alert>
       </div>
 
-      {/* 모바일 전화 버튼 - 고정 위치 */}
       <div className="md:hidden fixed bottom-6 right-6 z-50">
         <a
           href="tel:02-336-0309"
@@ -468,14 +455,12 @@ export default function ResultPage() {
         </a>
       </div>
 
-      {/* 상담 모달 */}
       <ConsultationModal
         isOpen={isConsultationModalOpen}
         onClose={() => setIsConsultationModalOpen(false)}
         calculationData={consultationCalculationData}
       />
 
-      {/* Footer 추가 */}
       <Footer />
     </div>
   )
