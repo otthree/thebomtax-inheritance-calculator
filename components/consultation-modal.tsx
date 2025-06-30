@@ -61,18 +61,13 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
         }),
       })
 
-      if (!response.ok) {
-        throw new Error("API Route Error: " + response.statusText)
-      }
-
       const result = await response.json()
 
       if (result.success) {
-        // 성공 페이지로 이동
         router.push("/consultation-success")
         onClose()
       } else {
-        throw new Error(result.message || "데이터 전송에 실패했습니다.")
+        alert(result.message || "데이터 전송에 실패했습니다.")
       }
     } catch (error) {
       console.error("상담 신청 오류:", error)
