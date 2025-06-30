@@ -1,8 +1,8 @@
 // 최종 수정된 Google Apps Script 코드
 
 var SpreadsheetApp = SpreadsheetApp
-var Utilities = Utilities
 var ContentService = ContentService
+var Utilities = Utilities
 
 function doPost(e) {
   try {
@@ -42,18 +42,17 @@ function doPost(e) {
       const details = []
 
       // 재산 항목들 (0이 아닌 것만)
-      const assets = []
       if (calc.realEstateTotal && calc.realEstateTotal > 0) {
-        assets.push(`부동산: ${Math.round(calc.realEstateTotal / 10000).toLocaleString()}만원`)
+        details.push(`부동산: ${Math.round(calc.realEstateTotal / 10000).toLocaleString()}만원`)
       }
       if (calc.financialAssetsTotal && calc.financialAssetsTotal > 0) {
-        assets.push(`금융자산: ${Math.round(calc.financialAssetsTotal / 10000).toLocaleString()}만원`)
+        details.push(`금융자산: ${Math.round(calc.financialAssetsTotal / 10000).toLocaleString()}만원`)
       }
       if (calc.giftAssetsTotal && calc.giftAssetsTotal > 0) {
-        assets.push(`사전증여자산: ${Math.round(calc.giftAssetsTotal / 10000).toLocaleString()}만원`)
+        details.push(`사전증여자산: ${Math.round(calc.giftAssetsTotal / 10000).toLocaleString()}만원`)
       }
       if (calc.otherAssetsTotal && calc.otherAssetsTotal > 0) {
-        assets.push(`기타자산: ${Math.round(calc.otherAssetsTotal / 10000).toLocaleString()}만원`)
+        details.push(`기타자산: ${Math.round(calc.otherAssetsTotal / 10000).toLocaleString()}만원`)
       }
 
       // 총 재산가액
@@ -62,18 +61,17 @@ function doPost(e) {
       }
 
       // 채무 항목들 (0이 아닌 것만)
-      const debts = []
       if (calc.funeralExpenseTotal && calc.funeralExpenseTotal > 0) {
-        debts.push(`장례비: ${Math.round(calc.funeralExpenseTotal / 10000).toLocaleString()}만원`)
+        details.push(`장례비: ${Math.round(calc.funeralExpenseTotal / 10000).toLocaleString()}만원`)
       }
       if (calc.financialDebtTotal && calc.financialDebtTotal > 0) {
-        debts.push(`금융채무: ${Math.round(calc.financialDebtTotal / 10000).toLocaleString()}만원`)
+        details.push(`금융채무: ${Math.round(calc.financialDebtTotal / 10000).toLocaleString()}만원`)
       }
       if (calc.taxArrearsTotal && calc.taxArrearsTotal > 0) {
-        debts.push(`세금미납: ${Math.round(calc.taxArrearsTotal / 10000).toLocaleString()}만원`)
+        details.push(`세금미납: ${Math.round(calc.taxArrearsTotal / 10000).toLocaleString()}만원`)
       }
       if (calc.otherDebtTotal && calc.otherDebtTotal > 0) {
-        debts.push(`기타채무: ${Math.round(calc.otherDebtTotal / 10000).toLocaleString()}만원`)
+        details.push(`기타채무: ${Math.round(calc.otherDebtTotal / 10000).toLocaleString()}만원`)
       }
 
       // 총 채무
@@ -81,19 +79,18 @@ function doPost(e) {
         details.push(`총 채무: ${Math.round(calc.totalDebt / 10000).toLocaleString()}만원`)
       }
 
-      // 공제 항목들 (0이 아닌 것만)
-      const deductions = []
+      // 공제 항목들
       if (calc.basicDeduction) {
-        deductions.push(`일괄공제: 5,000만원`)
+        details.push(`일괄공제: 5,000만원`)
       }
       if (calc.spouseDeduction) {
-        deductions.push(`배우자공제: 적용`)
+        details.push(`배우자공제: 적용`)
       }
       if (calc.housingDeduction) {
-        deductions.push(`동거주택 상속공제: 적용`)
+        details.push(`동거주택 상속공제: 적용`)
       }
       if (calc.financialDeduction && calc.financialDeduction > 0) {
-        deductions.push(`금융자산 상속공제: ${Math.round(calc.financialDeduction / 10000).toLocaleString()}만원`)
+        details.push(`금융자산 상속공제: ${Math.round(calc.financialDeduction / 10000).toLocaleString()}만원`)
       }
 
       // 총 공제액
@@ -122,12 +119,11 @@ function doPost(e) {
       }
 
       // 세액공제 항목들 (0이 아닌 것만)
-      const taxCredits = []
       if (calc.giftTaxCredit && calc.giftTaxCredit > 0) {
-        taxCredits.push(`증여세액공제: ${Math.round(calc.giftTaxCredit / 10000).toLocaleString()}만원`)
+        details.push(`증여세액공제: ${Math.round(calc.giftTaxCredit / 10000).toLocaleString()}만원`)
       }
       if (calc.reportTaxCredit && calc.reportTaxCredit > 0) {
-        taxCredits.push(`신고세액공제: ${Math.round(calc.reportTaxCredit / 10000).toLocaleString()}만원`)
+        details.push(`신고세액공제: ${Math.round(calc.reportTaxCredit / 10000).toLocaleString()}만원`)
       }
 
       // 총 세액공제
@@ -140,27 +136,7 @@ function doPost(e) {
         details.push(`최종 상속세: ${Math.round(calc.finalTax / 10000).toLocaleString()}만원`)
       }
 
-      // 재산 세부 항목 추가
-      if (assets.length > 0) {
-        details.unshift(`[재산] ${assets.join(", ")}`)
-      }
-
-      // 채무 세부 항목 추가
-      if (debts.length > 0) {
-        details.push(`[채무] ${debts.join(", ")}`)
-      }
-
-      // 공제 세부 항목 추가
-      if (deductions.length > 0) {
-        details.push(`[공제] ${deductions.join(", ")}`)
-      }
-
-      // 세액공제 세부 항목 추가
-      if (taxCredits.length > 0) {
-        details.push(`[세액공제] ${taxCredits.join(", ")}`)
-      }
-
-      // 최종 요약 생성
+      // 최종 요약 생성 - 구분자를 | 대신 줄바꿈으로 변경
       if (details.length > 0) {
         calculationSummary = details.join(" | ")
       } else {
@@ -253,34 +229,34 @@ function manualTest() {
   const testData = {
     postData: {
       contents: JSON.stringify({
-        name: "테스트 사용자7",
+        name: "테스트 사용자6",
         phone: "010-1234-5678",
-        message: "총재산 100,000만원, 상속세 6,730만원 테스트",
+        message: "여섯 번째 테스트 상담 신청입니다.",
         calculationData: {
-          totalAssets: 1000000000, // 10억 = 100,000만원
-          totalDebt: 0,
-          netAssets: 1000000000,
-          taxableAmount: 500000000, // 5억
-          finalTax: 67300000, // 6,730만원
-          realEstateTotal: 600000000,
-          financialAssetsTotal: 400000000,
-          giftAssetsTotal: 0,
+          totalAssets: 1500000000,
+          totalDebt: 50000000,
+          netAssets: 1450000000,
+          taxableAmount: 950000000,
+          finalTax: 208440000,
+          realEstateTotal: 800000000,
+          financialAssetsTotal: 500000000,
+          giftAssetsTotal: 200000000,
           otherAssetsTotal: 0,
-          financialDebtTotal: 0,
-          funeralExpenseTotal: 0,
+          financialDebtTotal: 30000000,
+          funeralExpenseTotal: 20000000,
           taxArrearsTotal: 0,
           otherDebtTotal: 0,
           totalDeductions: 500000000,
           financialDeduction: 0,
           basicDeduction: true,
           spouseDeduction: false,
-          housingDeduction: false,
-          taxRate: 20,
-          progressiveDeduction: 32700000,
-          calculatedTax: 100000000,
-          giftTaxCredit: 0,
-          reportTaxCredit: 32700000,
-          totalTaxCredit: 32700000,
+          housingDeduction: true,
+          taxRate: 30,
+          progressiveDeduction: 162000000,
+          calculatedTax: 285000000,
+          giftTaxCredit: 50000000,
+          reportTaxCredit: 26560000,
+          totalTaxCredit: 76560000,
         },
       }),
     },

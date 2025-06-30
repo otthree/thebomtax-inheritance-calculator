@@ -1,48 +1,30 @@
-# 상속세 계산기
+# Korean tax calculator clone
 
-한국의 상속세 계산을 위한 웹 애플리케이션입니다.
+*Automatically synced with your [v0.dev](https://v0.dev) deployments*
 
-## 기능
+[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/xfkwl00214xfkwl00214-9802s-projects/v0-korean-tax-calculator-clone)
+[![Built with v0](https://img.shields.io/badge/Built%20with-v0.dev-black?style=for-the-badge)](https://v0.dev/chat/projects/X6BrfwFnb8Y)
 
-- 상속재산 입력 및 계산
-- 상속세 자동 계산
-- 전문가 상담 신청 (Google Sheets 연동)
-- 반응형 디자인
+## Overview
 
-## 설치 및 실행
+This repository will stay in sync with your deployed chats on [v0.dev](https://v0.dev).
+Any changes you make to your deployed app will be automatically pushed to this repository from [v0.dev](https://v0.dev).
 
-1. 의존성 설치:
-\`\`\`bash
-npm install
-# 또는
-pnpm install
-\`\`\`
+## Deployment
 
-2. 환경변수 설정:
-`.env.local` 파일을 생성하고 Google Apps Script URL을 설정하세요.
+Your project is live at:
 
-3. 개발 서버 실행:
-\`\`\`bash
-npm run dev
-# 또는
-pnpm dev
-\`\`\`
+**[https://vercel.com/xfkwl00214xfkwl00214-9802s-projects/v0-korean-tax-calculator-clone](https://vercel.com/xfkwl00214xfkwl00214-9802s-projects/v0-korean-tax-calculator-clone)**
 
-4. 브라우저에서 `http://localhost:3000` 접속
+## Build your app
 
-## Google Sheets 연동 설정
+Continue building your app on:
 
-1. Google Apps Script에서 새 프로젝트 생성
-2. `scripts/google-apps-script-final.js` 코드 복사
-3. 스프레드시트 ID 설정
-4. 웹 앱으로 배포
-5. `.env.local`에 웹 앱 URL 설정
+**[https://v0.dev/chat/projects/X6BrfwFnb8Y](https://v0.dev/chat/projects/X6BrfwFnb8Y)**
 
-## 기술 스택
+## How It Works
 
-- Next.js 15
-- TypeScript
-- Tailwind CSS
-- shadcn/ui
-- Google Apps Script
-- Google Sheets
+1. Create and modify your project using [v0.dev](https://v0.dev)
+2. Deploy your chats from the v0 interface
+3. Changes are automatically pushed to this repository
+4. Vercel deploys the latest version from this repository
