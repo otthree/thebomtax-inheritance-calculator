@@ -15,35 +15,21 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    // 1차 요청
-    let res = await fetch(scriptUrl, {
+    // Google Apps Script에 POST 요청
+    const res = await fetch(scriptUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
-      redirect: "manual", // 302 를 직접 확인하기 위해
+      redirect: "manual", // 302를 직접 처리
     })
 
-    // 302(또는 303) 이면 Location 헤더의 URL 로 GET 재요청
-    if (res.status === 302 || res.status === 303) {
-      const redirectUrl = res.headers.get("Location")
-      if (redirectUrl) {
-        console.log("Google Script 302 → GET 요청 URL:", redirectUrl)
-        res = await fetch(redirectUrl, { method: "GET" })
-      } else {
-        // Location 헤더가 없지만 302면 성공으로 간주
-        return NextResponse.json({
-          success: true,
-          message: "상담 신청이 접수되었습니다.",
-        })
-      }
-    }
+    console.log("Google Script 응답 상태:", res.status)
 
-    // 200 ~ 299 만 성공으로 간주
-    if (res.ok) {
-      const data = await res.json().catch(() => ({})) // JSON 이 아니면 빈 객체
+    // 302는 Google Apps Script의 정상적인 응답이므로 성공으로 처리
+    if (res.status === 302 || res.status === 200) {
       return NextResponse.json({
         success: true,
-        message: data.message ?? "상담 신청이 접수되었습니다.",
+        message: "상담 신청이 접수되었습니다.",
       })
     }
 
