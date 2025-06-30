@@ -49,20 +49,35 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
     setIsSubmitting(true)
 
     try {
+      // 전송할 데이터 구성
+      const submitData = {
+        name: formData.name.trim(),
+        phone: formData.phone.trim(),
+        message: formData.message.trim() || "상속세 상담 요청",
+        calculationData: calculationData || null,
+        timestamp: new Date().toISOString(),
+      }
+
+      console.log("전송할 데이터:", submitData)
+
       const response = await fetch("/api/consultation", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: formData.name,
-          phone: formData.phone,
-          message: formData.message,
-          calculationData: calculationData,
-        }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(submitData),
       })
 
       const result = await response.json()
 
       if (result.success) {
+        // 폼 초기화
+        setFormData({
+          name: "",
+          phone: "",
+          message: "",
+        })
+
         router.push("/consultation-success")
         onClose()
       } else {
@@ -78,10 +93,16 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent
+        className="max-w-2xl max-h-[90vh] overflow-y-auto"
+        aria-describedby="consultation-modal-description"
+      >
         <DialogHeader>
           <div className="flex items-center justify-between">
             <DialogTitle className="text-xl font-bold">전문가 상담 신청</DialogTitle>
+          </div>
+          <div id="consultation-modal-description" className="text-sm text-gray-600">
+            상속세 전문가와 1:1 상담을 받으실 수 있습니다.
           </div>
         </DialogHeader>
 
@@ -128,6 +149,16 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
                 onChange={(e) => handleInputChange("message", e.target.value)}
               />
             </div>
+
+            {calculationData && (
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-medium mb-2">계산 결과 요약</h4>
+                <div className="text-sm text-gray-600 space-y-1">
+                  <div>총 재산: {calculationData.totalAssets?.toLocaleString()}원</div>
+                  <div>최종 상속세: {calculationData.finalTax?.toLocaleString()}원</div>
+                </div>
+              </div>
+            )}
 
             <div className="flex gap-3 pt-4">
               <Button
