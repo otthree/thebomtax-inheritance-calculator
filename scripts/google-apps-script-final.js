@@ -48,12 +48,6 @@ function doPost(e) {
     const phone = (data.phone || "").toString().trim()
     const message = (data.message || "").toString().trim()
 
-    console.log("처리된 데이터:")
-    console.log("- 이름:", `"${name}"`)
-    console.log("- 전화번호:", `"${phone}"`)
-    console.log("- 상담내용:", `"${message}"`)
-    console.log("- 계산결과:", calculationSummary)
-
     // 마지막 행 다음에 데이터 추가
     const lastRow = sheet.getLastRow()
     const newRowIndex = lastRow + 1
