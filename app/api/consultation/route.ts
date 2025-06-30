@@ -103,26 +103,31 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 응답 처리
-    const rawBody = await scriptRes.text()
-    console.log("[SERVER] Google Script 응답 상태:", scriptRes.status)
-    console.log("[SERVER] Google Script 응답 본문:", rawBody)
-
+    // -------- 응답 처리 --------
+    // 302 또는 200 은 성공으로 간주
     if (scriptRes.status === 302 || scriptRes.status === 200) {
-      console.log("[SERVER] 상담 신청 성공")
+      console.log("[SERVER] 상담 신청 성공 (status:", scriptRes.status, ")")
       return NextResponse.json({
         success: true,
         message: "상담 신청이 접수되었습니다.",
       })
     }
 
-    // 실패 응답
+    // 기타 상태는 실패로 간주 ─ 이때만 body 를 읽음
+    let rawBody = ""
+    try {
+      rawBody = await scriptRes.text()
+    } catch {
+      /* body 가 없어도 무시 */
+    }
+
+    console.error("[SERVER] Google Script 오류 상태:", scriptRes.status, rawBody)
     return NextResponse.json(
       {
         success: false,
         message: "상담 신청 처리 중 오류가 발생했습니다.",
         debug: `Google Script returned status ${scriptRes.status}`,
-        scriptBody: rawBody.substring(0, 200), // 응답 일부만 표시
+        scriptBody: rawBody.substring(0, 200),
       },
       { status: 500 },
     )

@@ -103,19 +103,24 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
       console.log("서버 응답 상태:", response.status)
       console.log("서버 응답 헤더:", Object.fromEntries(response.headers.entries()))
 
-      // 응답 본문 안전하게 읽기
+      // 응답 본문 읽기 ─ content-type 헤더가 없더라도 JSON 문자열이면 직접 파싱
       const contentType = response.headers.get("content-type") || ""
       let result: any = {}
 
       if (contentType.includes("application/json")) {
         result = await response.json()
-        console.log("서버 응답 데이터:", result)
       } else {
         const raw = await response.text()
-        console.error("Unexpected non-JSON response:", raw)
-        alert("서버 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.")
-        return
+        try {
+          result = JSON.parse(raw)
+        } catch {
+          console.error("Unexpected non-JSON response:", raw)
+          alert("서버 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.")
+          return
+        }
       }
+
+      console.log("서버 응답 데이터:", result)
 
       if (!response.ok || !result?.success) {
         console.error("상담 신청 실패:", result)
