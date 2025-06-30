@@ -2,45 +2,53 @@ import { NextResponse, type NextRequest } from "next/server"
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json()
-    console.log("상담 신청 데이터:", body)
+    const payload = await req.json()
+    console.log("상담 신청 데이터:", payload)
 
-    // Google Apps Script URL
-    const googleScriptUrl = process.env.NEXT_PUBLIC_GOOGLE_SCRIPT_URL
+    const scriptUrl = process.env.NEXT_PUBLIC_GOOGLE_SCRIPT_URL
 
-    if (!googleScriptUrl) {
-      console.log("Google Script URL이 설정되지 않음 - 로컬 테스트 모드")
+    // 스크립트 URL이 없으면 로컬 테스트 모드
+    if (!scriptUrl) {
       return NextResponse.json({
         success: true,
         message: "상담 신청이 접수되었습니다. (로컬 테스트)",
       })
     }
 
-    // Google Apps Script 호출
-    console.log("Google Script 호출 시작...")
-    const response = await fetch(googleScriptUrl, {
+    // 1차 요청
+    let res = await fetch(scriptUrl, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+      redirect: "manual", // 302 를 직접 확인하기 위해
     })
 
-    console.log("Google Script 응답 상태:", response.status)
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
+    // 302 이면 Location 헤더의 URL 로 다시 POST
+    if (res.status === 302) {
+      const redirectUrl = res.headers.get("Location")
+      if (redirectUrl) {
+        console.log("Google Script 302 → 재요청 URL:", redirectUrl)
+        res = await fetch(redirectUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        })
+      }
     }
 
-    const result = await response.json()
-    console.log("Google Script 응답:", result)
+    // 200 ~ 299 만 성공으로 간주
+    if (res.ok) {
+      const data = await res.json().catch(() => ({})) // JSON 이 아니면 빈 객체
+      return NextResponse.json({
+        success: true,
+        message: data.message ?? "상담 신청이 접수되었습니다.",
+      })
+    }
 
-    return NextResponse.json(result)
-  } catch (error) {
-    console.error("API 오류:", error)
-    return NextResponse.json({
-      success: false,
-      message: "서버 오류가 발생했습니다: " + String(error),
-    })
+    // 그 외 상태코드는 오류
+    throw new Error(`Google Script 응답 코드: ${res.status}`)
+  } catch (err) {
+    console.error("API 오류:", err)
+    return NextResponse.json({ success: false, message: "서버 오류가 발생했습니다." }, { status: 500 })
   }
 }
