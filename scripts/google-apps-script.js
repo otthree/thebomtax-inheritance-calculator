@@ -1,7 +1,19 @@
 // Google Apps Script 코드 (Google Apps Script 에디터에서 사용)
 
+var SpreadsheetApp = SpreadsheetApp
+var Utilities = Utilities
+var Session = Session
+var ContentService = ContentService
+
 function doPost(e) {
   try {
+    // CORS 헤더 설정
+    const headers = {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type",
+    }
+
     // POST 요청 데이터 파싱
     const data = JSON.parse(e.postData.contents)
 
@@ -18,17 +30,27 @@ function doPost(e) {
     const now = new Date()
     const timestamp = Utilities.formatDate(now, Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm:ss")
 
-    // 계산 결과 포맷팅
+    // 계산 결과 포맷팅 (줄바꿈을 공백으로 변경)
     const calculationDetails = formatCalculationData(data.calculationData)
 
-    // 새 행 추가
-    const newRow = [timestamp, data.name, data.phone, data.message, calculationDetails]
+    // 새 행 추가 - 각 값을 명시적으로 문자열로 변환
+    const newRow = [
+      String(timestamp),
+      String(data.name || ""),
+      String(data.phone || ""),
+      String(data.message || ""),
+      String(calculationDetails),
+    ]
 
-    sheet.appendRow(newRow)
+    // 한 번에 한 행 추가
+    const lastRow = sheet.getLastRow()
+    sheet.getRange(lastRow + 1, 1, 1, 5).setValues([newRow])
 
     return ContentService.createTextOutput(
       JSON.stringify({ success: true, message: "데이터가 성공적으로 저장되었습니다." }),
-    ).setMimeType(ContentService.MimeType.JSON)
+    )
+      .setMimeType(ContentService.MimeType.JSON)
+      .setHeaders(headers)
   } catch (error) {
     console.error("Error:", error)
     return ContentService.createTextOutput(
@@ -45,48 +67,25 @@ function formatCalculationData(data) {
     return rounded.toLocaleString("ko-KR")
   }
 
-  return `
-1단계: 총 재산가액 계산
-부동산: ${formatNumber(data.realEstateTotal)}원
-금융자산: ${formatNumber(data.financialAssetsTotal)}원
-사전증여자산: ${formatNumber(data.giftAssetsTotal)}원
-기타자산: ${formatNumber(data.otherAssetsTotal)}원
-총 재산가액: ${formatNumber(data.totalAssets)}원
+  // 줄바꿈 대신 | 구분자 사용
+  return [
+    `총재산: ${formatNumber(data.totalAssets)}원`,
+    `총채무: ${formatNumber(data.totalDebt)}원`,
+    `순재산: ${formatNumber(data.netAssets)}원`,
+    `과세표준: ${formatNumber(data.taxableAmount)}원`,
+    `세율: ${data.taxRate}%`,
+    `최종상속세: ${formatNumber(data.finalTax)}원`,
+    `공제(기본:${data.basicDeduction ? "O" : "X"}, 배우자:${data.spouseDeduction ? "O" : "X"}, 주택:${data.housingDeduction ? "O" : "X"})`,
+  ].join(" | ")
+}
 
-2단계: 총 채무 계산
-장례비: ${formatNumber(data.funeralExpenseTotal)}원
-금융채무: ${formatNumber(data.financialDebtTotal)}원
-세금미납: ${formatNumber(data.taxArrearsTotal)}원
-기타채무: ${formatNumber(data.otherDebtTotal)}원
-총 채무: ${formatNumber(data.totalDebt)}원
-
-3단계: 순 재산가액 계산
-총 재산가액 - 총 채무: ${formatNumber(data.netAssets)}원
-${formatNumber(data.totalAssets)} - ${formatNumber(data.totalDebt)} = ${formatNumber(data.netAssets)}
-
-4단계: 공제 계산
-일괄공제: ${data.basicDeduction ? "500,000,000" : "0"}원
-배우자공제: ${data.spouseDeduction ? "500,000,000" : "0"}원
-동거주택 상속공제: ${data.housingDeduction ? "600,000,000" : "0"}원
-금융자산 상속공제: ${formatNumber(data.financialDeduction)}원
-총 공제액: ${formatNumber(data.totalDeductions)}원
-
-5단계: 과세표준 계산
-순 재산가액 - 총 공제액: ${formatNumber(data.taxableAmount)}원
-${formatNumber(data.netAssets)} - ${formatNumber(data.totalDeductions)} = ${formatNumber(data.taxableAmount)}
-
-6단계: 세율 적용
-과세표준: ${formatNumber(data.taxableAmount)}원
-적용 세율: ${data.taxRate.toFixed(1)}%
-누진공제: ${formatNumber(data.progressiveDeduction)}원
-산출세액: ${formatNumber(data.calculatedTax)}원
-
-7단계: 세액공제
-증여세액공제: ${formatNumber(data.giftTaxCredit)}원
-신고세액공제: ${formatNumber(data.reportTaxCredit)}원
-세액공제 합계: ${formatNumber(data.totalTaxCredit)}원
-최종 상속세: ${formatNumber(data.finalTax)}원
-  `.trim()
+// OPTIONS 요청 처리 (CORS preflight)
+function doOptions(e) {
+  return ContentService.createTextOutput("").setMimeType(ContentService.MimeType.TEXT).setHeaders({
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
+  })
 }
 
 // 테스트용 함수
@@ -101,27 +100,12 @@ function testDoPost() {
           totalAssets: 1000000000,
           totalDebt: 100000000,
           netAssets: 900000000,
-          realEstateTotal: 800000000,
-          financialAssetsTotal: 200000000,
-          giftAssetsTotal: 0,
-          otherAssetsTotal: 0,
-          financialDebtTotal: 100000000,
-          funeralExpenseTotal: 0,
-          taxArrearsTotal: 0,
-          otherDebtTotal: 0,
-          totalDeductions: 500000000,
-          financialDeduction: 0,
+          taxableAmount: 400000000,
+          taxRate: 20,
+          finalTax: 67900000,
           basicDeduction: true,
           spouseDeduction: false,
           housingDeduction: false,
-          taxableAmount: 400000000,
-          taxRate: 20,
-          progressiveDeduction: 10000000,
-          calculatedTax: 70000000,
-          giftTaxCredit: 0,
-          reportTaxCredit: 2100000,
-          totalTaxCredit: 2100000,
-          finalTax: 67900000,
         },
       }),
     },
@@ -129,4 +113,21 @@ function testDoPost() {
 
   const result = doPost(testData)
   console.log(result.getContent())
+}
+
+// 기존 잘못된 데이터 정리 함수
+function cleanupSheet() {
+  const SPREADSHEET_ID = "YOUR_SPREADSHEET_ID_HERE"
+  const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getActiveSheet()
+
+  // 모든 데이터 삭제하고 헤더만 남기기
+  const lastRow = sheet.getLastRow()
+  if (lastRow > 1) {
+    sheet.deleteRows(2, lastRow - 1)
+  }
+
+  // 헤더 다시 설정
+  sheet.getRange(1, 1, 1, 5).setValues([["제출일시", "이름", "전화번호", "상담내용", "계산결과"]])
+
+  console.log("시트가 정리되었습니다.")
 }
