@@ -60,14 +60,25 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
         }),
       })
 
-      const result = await response.json()
-
-      if (result.success) {
-        router.push("/consultation-success")
-        onClose()
-      } else {
-        alert(result.message || "상담 신청에 실패했습니다.")
+      // ---- read body safely ---
+      const raw = await response.text()
+      let result: any
+      try {
+        result = JSON.parse(raw)
+      } catch (e) {
+        console.error("Unexpected non-JSON response:", raw)
+        alert("서버 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.")
+        return
       }
+
+      if (!response.ok || !result?.success) {
+        alert(result?.message || "상담 신청에 실패했습니다.")
+        return
+      }
+
+      // 성공 시
+      router.push("/consultation-success")
+      onClose()
     } catch (error) {
       console.error("상담 신청 오류:", error)
       alert("상담 신청 중 오류가 발생했습니다.")
