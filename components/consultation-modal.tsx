@@ -80,11 +80,12 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
       })
 
       // ---- read body safely ---
-      const raw = await response.text()
-      let result: any
-      try {
-        result = JSON.parse(raw)
-      } catch (e) {
+      const contentType = response.headers.get("content-type") || ""
+      let result: any = {}
+      if (contentType.includes("application/json")) {
+        result = await response.json()
+      } else {
+        const raw = await response.text()
         console.error("Unexpected non-JSON response:", raw)
         alert("서버 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.")
         return
