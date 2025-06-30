@@ -187,3 +187,5 @@ export function ConsultationModal({ calculationData }: ConsultationModalProps) {
     </Dialog>
   )
 }
+
+export default ConsultationModal
