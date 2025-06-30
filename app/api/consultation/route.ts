@@ -1,75 +1,71 @@
 import { NextResponse, type NextRequest } from "next/server"
 
-/*  
-  • Node 런타임 강제 (외부 fetch, console 사용)  
-  • 빌드 캐싱 방지
-*/
+/* Node 런타임 강제 – 외부 fetch 사용 */
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
 
 /**
- * 상담 신청 POST
- *  - 어떤 경우에도 JSON 만 반환
- *  - Google Apps Script 의 302 리다이렉트(보안용)도 직접 따라가서 처리
+ * 상담 신청 API
+ *  ─ Google Apps Script로 POST
+ *  ─ 302 리다이렉트도 따라가서 처리
+ *  ─ 어떤 경우에도 JSON만 반환
  */
 export async function POST(req: NextRequest) {
   try {
-    /* 1. 요청 본문 파싱 (빈 바디‧잘못된 JSON 대비) */
-    let body: any = {}
+    /* 1) 본문 파싱 */
+    let payload: any
     try {
-      body = await req.json()
+      payload = await req.json()
     } catch {
-      return NextResponse.json({ success: false, message: "잘못된 요청 형식입니다." }, { status: 400 })
+      return NextResponse.json({ success: false, message: "잘못된 JSON 형식입니다." }, { status: 400 })
     }
 
+    /* 2) 스크립트 URL */
     const scriptUrl = process.env.NEXT_PUBLIC_GOOGLE_SCRIPT_URL || process.env.GOOGLE_SCRIPT_URL
-
-    /* 2. 로컬/환경변수 미설정이면 바로 성공 응답 */
     if (!scriptUrl) {
+      // 로컬/테스트 환경
       return NextResponse.json({
         success: true,
-        message: "로컬 환경 – 상담 신청이 접수되었습니다.",
-        echo: body,
+        message: "로컬 환경 - 상담 신청이 접수되었습니다.",
+        echo: payload,
       })
     }
 
-    /* 3. Google Apps Script 호출 (302 수동 처리) */
-    const gRes = await fetch(scriptUrl, {
+    /* 3) Google Apps Script 호출 (302 수동 처리) */
+    const first = await fetch(scriptUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+      body: JSON.stringify(payload),
       redirect: "manual",
     })
 
-    const isRedirect = gRes.status === 302
-    const finalRes = isRedirect
-      ? await fetch(gRes.headers.get("location") as string, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        })
-      : gRes
+    const finalRes =
+      first.status === 302 && first.headers.get("location")
+        ? await fetch(first.headers.get("location") as string, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          })
+        : first
 
-    /* 4. Google 응답을 텍스트로 우선 확보 */
-    const textPayload = await finalRes.text()
-
-    /* 5. JSON 파싱 시도 */
-    let parsed: any
+    /* 4) 본문을 텍스트로 받아 JSON 파싱 시도 */
+    const raw = await finalRes.text()
+    let parsed: any = null
     try {
-      parsed = JSON.parse(textPayload)
+      parsed = JSON.parse(raw)
     } catch {
-      parsed = null
+      /* Apps Script 가 HTML 문서를 내보내는 경우 */
     }
 
-    /* 6. 성공으로 간주 */
+    /* 5) 클라이언트로 성공 응답 */
     return NextResponse.json({
       success: true,
-      message: parsed?.message ?? "상담 신청이 접수되었습니다.",
+      message: parsed?.message || "상담 신청이 접수되었습니다.",
       googleStatus: finalRes.status,
-      redirected: isRedirect,
+      redirected: first.status === 302,
     })
   } catch (err: any) {
-    /* 7. 어떤 예외라도 JSON 만 반환 */
+    /* 6) 모든 예외를 JSON 형태로 반환 */
     return NextResponse.json(
       {
         success: false,
@@ -81,7 +77,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
-/* CORS pre-flight */
+/* CORS pre-flight 대응 */
 export function OPTIONS() {
   return new NextResponse(null, {
     status: 204,
