@@ -49,12 +49,10 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
     setIsSubmitting(true)
 
     try {
-      // 구글 시트로 데이터 전송
-      const response = await fetch(process.env.NEXT_PUBLIC_GOOGLE_SCRIPT_URL!, {
+      // 구글 시트로 데이터 전송 → Next.js API Route 경유
+      const response = await fetch("/api/consultation", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: formData.name,
           phone: formData.phone,
@@ -62,6 +60,10 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
           calculationData: calculationData,
         }),
       })
+
+      if (!response.ok) {
+        throw new Error("API Route Error: " + response.statusText)
+      }
 
       const result = await response.json()
 
