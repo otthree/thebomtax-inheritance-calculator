@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 
 /**
- * 상담 신청을 Google Apps Script 로 전달한다. 이대현
+ * 상담 신청을 Google Apps Script 로 전달한다.
  * 어떤 상황에서도 JSON 응답을 반환하여
  * 클라이언트가 `response.json()` 을 안전하게 호출할 수 있도록 한다.
  */
@@ -11,7 +11,7 @@ export async function POST(req: Request) {
 
     const scriptUrl = process.env.NEXT_PUBLIC_GOOGLE_SCRIPT_URL || process.env.GOOGLE_SCRIPT_URL
 
-    /* 로컬 / CI 등 스크립트 URL 이 없을 때는 바로 성공 처리 */
+    /* 로컬 / CI 등 스크립트 URL 이 없을 때는 바로 성공 처리 */
     if (!scriptUrl) {
       return NextResponse.json({
         success: true,
