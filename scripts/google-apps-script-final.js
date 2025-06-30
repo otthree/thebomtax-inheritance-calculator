@@ -1,8 +1,8 @@
 // 최종 수정된 Google Apps Script 코드
 
 var SpreadsheetApp = SpreadsheetApp
-var ContentService = ContentService
 var Utilities = Utilities
+var ContentService = ContentService
 
 function doPost(e) {
   try {
@@ -255,13 +255,13 @@ function manualTest() {
       contents: JSON.stringify({
         name: "테스트 사용자7",
         phone: "010-1234-5678",
-        message: "일곱 번째 테스트 상담 신청입니다.",
+        message: "총재산 100,000만원, 상속세 6,730만원 테스트",
         calculationData: {
-          totalAssets: 1000000000,
+          totalAssets: 1000000000, // 10억 = 100,000만원
           totalDebt: 0,
           netAssets: 1000000000,
-          taxableAmount: 500000000,
-          finalTax: 67300000,
+          taxableAmount: 500000000, // 5억
+          finalTax: 67300000, // 6,730만원
           realEstateTotal: 600000000,
           financialAssetsTotal: 400000000,
           giftAssetsTotal: 0,
