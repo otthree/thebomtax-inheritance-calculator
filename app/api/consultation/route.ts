@@ -1,5 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server"
 
+export const dynamic = "force-dynamic"
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
@@ -10,19 +12,28 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, message: "Google Script URL is missing." }, { status: 500 })
     }
 
-    // 서버 환경은 CORS 제약이 없으므로 그대로 전달
+    // 1) Apps Script 호출
     const gsRes = await fetch(gsUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
+      redirect: "follow",
     })
 
-    if (!gsRes.ok) {
+    // 2) 200-399 는 모두 성공으로 처리
+    if (gsRes.status >= 400) {
       const text = await gsRes.text()
       return NextResponse.json({ success: false, message: "Google Script Error", detail: text }, { status: 500 })
     }
 
-    const data = await gsRes.json()
+    // 3) JSON 응답이 없는 경우 방어
+    let data: unknown
+    try {
+      data = await gsRes.json()
+    } catch {
+      data = { success: true, message: "Saved (no JSON returned)" }
+    }
+
     return NextResponse.json(data)
   } catch (err) {
     console.error(err)
