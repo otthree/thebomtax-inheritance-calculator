@@ -1061,15 +1061,15 @@ export default function InheritanceTaxCalculator() {
                           </div>
                           <div className="flex justify-between">
                             <span className="text-slate-600">사전증여자산:</span>
-                            <span className="text-slate-900">{formatNumber(calculationResult.giftAssetsTotal)}원</span>
+                            <span className="text-slate-900">{formatNumber(calculationResult.giftAssetsTotal)}만원</span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-slate-600">기타자산:</span>
-                            <span className="text-slate-900">{formatNumber(calculationResult.otherAssetsTotal)}원</span>
+                            <span className="text-slate-900">{formatNumber(calculationResult.otherAssetsTotal)}만원</span>
                           </div>
                           <div className="flex justify-between font-medium pt-2 border-t border-slate-200">
                             <span className="text-slate-600">총 재산가액:</span>
-                            <span className="text-blue-700">{formatNumber(calculationResult.totalAssets)}원</span>
+                            <span className="text-blue-700">{formatNumber(calculationResult.totalAssets)}만원</span>
                           </div>
                         </div>
                       </div>
