@@ -113,7 +113,7 @@ export default function ResultPage() {
   }, [])
 
   const formatNumber = (num: number) => {
-    const rounded = Math.round(num / 10) * 10
+    const rounded = Math.round(num / 10000)
     return rounded.toLocaleString("ko-KR")
   }
 
