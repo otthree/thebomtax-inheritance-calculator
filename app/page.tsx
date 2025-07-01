@@ -1080,26 +1080,26 @@ export default function InheritanceTaxCalculator() {
                           <div className="flex justify-between">
                             <span className="text-slate-600">장례비:</span>
                             <span className="text-slate-900">
-                              {formatNumber(calculationResult.funeralExpenseTotal)}원
+                              {formatNumber(calculationResult.funeralExpenseTotal)}만원
                             </span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-slate-600">금융채무:</span>
                             <span className="text-slate-900">
-                              {formatNumber(calculationResult.financialDebtTotal)}원
+                              {formatNumber(calculationResult.financialDebtTotal)}만원
                             </span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-slate-600">세금미납:</span>
-                            <span className="text-slate-900">{formatNumber(calculationResult.taxArrearsTotal)}원</span>
+                            <span className="text-slate-900">{formatNumber(calculationResult.taxArrearsTotal)}만원</span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-slate-600">기타채무:</span>
-                            <span className="text-slate-900">{formatNumber(calculationResult.otherDebtTotal)}원</span>
+                            <span className="text-slate-900">{formatNumber(calculationResult.otherDebtTotal)}만원</span>
                           </div>
                           <div className="flex justify-between font-medium pt-2 border-t border-slate-200">
                             <span className="text-slate-600">총 채무:</span>
-                            <span className="text-red-700">{formatNumber(calculationResult.totalDebt)}원</span>
+                            <span className="text-red-700">{formatNumber(calculationResult.totalDebt)}만원</span>
                           </div>
                         </div>
                       </div>
