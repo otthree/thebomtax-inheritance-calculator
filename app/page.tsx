@@ -1233,11 +1233,11 @@ export default function InheritanceTaxCalculator() {
                           <span className="font-semibold">최종 계산 결과</span>
                         </div>
                         <div className="text-2xl font-bold mb-1">
-                          최종 상속세: {formatNumber(calculationResult.finalTax)}원
+                          최종 상속세: {formatNumber(calculationResult.finalTax)}만원
                         </div>
                         <div className="text-sm opacity-90">
-                          산출세액: {formatNumber(calculationResult.calculatedTax)}원 - 세액공제:{" "}
-                          {formatNumber(calculationResult.totalTaxCredit)}원
+                          산출세액: {formatNumber(calculationResult.calculatedTax)}만원 - 세액공제:{" "}
+                          {formatNumber(calculationResult.totalTaxCredit)}만원
                         </div>
                       </div>
                     </div>
