@@ -1164,7 +1164,7 @@ export default function InheritanceTaxCalculator() {
                             <span className="text-orange-700">{formatNumber(calculationResult.taxableAmount)}만원</span>
                           </div>
                           <div className="text-xs text-slate-500">
-                            {formatNumber(calculationResult.totalAssets)} -{" "}
+                            {formatNumber(calculationResult.netAssets)} -{" "}
                             {formatNumber(calculationResult.totalDeductions)} ={" "}
                             {formatNumber(calculationResult.taxableAmount)}
                           </div>

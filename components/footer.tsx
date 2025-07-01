@@ -1,142 +1,131 @@
-import Image from "next/image"
+import { Phone, MessageCircle, MapPin } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 
 export function Footer() {
   return (
-    <footer className="bg-slate-900 text-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          {/* 회사 정보 */}
-          <div className="md:col-span-2">
-            <div className="flex items-center mb-4">
-              <Image src="/logo-deobom-white.png" alt="세무법인 더봄" width={180} height={54} className="h-8 w-auto" />
+    <footer className="bg-slate-800 text-white">
+      <div className="container mx-auto px-4 py-12">
+        {/* Main Footer Content */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
+          {/* Logo Section */}
+          <div className="lg:col-span-1">
+            <div className="flex items-center mb-6">
+              <Image src="/logo-deobom-white.png" alt="세무법인 더봄" width={200} height={60} className="h-10 w-auto" />
             </div>
-            <p className="text-slate-300 text-sm mb-4">
-              전문적이고 신뢰할 수 있는 세무 서비스를 제공하는 세무법인 더봄입니다.
-              <br />
-              상속세, 증여세, 법인세 등 모든 세무 업무를 전문적으로 처리해드립니다.
-            </p>
-            <div className="space-y-2 text-sm text-slate-300">
-              <p>
-                <span className="font-medium">주소:</span> 서울특별시 강남구 테헤란로 123길 45, 더봄빌딩 7층
-              </p>
-              <p>
-                <span className="font-medium">전화:</span> 02-336-0309
-              </p>
-              <p>
-                <span className="font-medium">팩스:</span> 02-336-0310
-              </p>
-              <p>
-                <span className="font-medium">이메일:</span> info@deobom.co.kr
-              </p>
+
+            {/* SNS Links */}
+            <div className="flex space-x-4">
+              <Link
+                href="https://www.youtube.com/@택스퀸"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-10 h-10 rounded-full flex items-center justify-center hover:opacity-80 transition-opacity"
+                aria-label="유튜브"
+              >
+                <Image
+                  src="/icons/youtube-icon.png"
+                  alt="YouTube"
+                  width={40}
+                  height={40}
+                  className="w-10 h-10 rounded-lg"
+                />
+              </Link>
+              <Link
+                href="https://www.instagram.com/hong_taxqueen/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-10 h-10 rounded-full flex items-center justify-center hover:opacity-80 transition-opacity"
+                aria-label="인스타그램"
+              >
+                <Image
+                  src="/icons/instagram-icon.png"
+                  alt="Instagram"
+                  width={40}
+                  height={40}
+                  className="w-10 h-10 rounded-lg"
+                />
+              </Link>
+              <Link
+                href="https://blog.naver.com/l77155"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-10 h-10 rounded-full flex items-center justify-center hover:opacity-80 transition-opacity"
+                aria-label="네이버 블로그"
+              >
+                <Image
+                  src="/icons/naver-blog-icon.png"
+                  alt="네이버 블로그"
+                  width={40}
+                  height={40}
+                  className="w-10 h-10 rounded-lg"
+                />
+              </Link>
             </div>
           </div>
 
-          {/* 서비스 */}
+          {/* Operating Hours */}
           <div>
-            <h3 className="text-lg font-semibold mb-4">주요 서비스</h3>
-            <ul className="space-y-2 text-sm text-slate-300">
-              <li>
-                <Link href="#" className="hover:text-white transition-colors">
-                  상속세 신고
-                </Link>
-              </li>
-              <li>
-                <Link href="#" className="hover:text-white transition-colors">
-                  증여세 신고
-                </Link>
-              </li>
-              <li>
-                <Link href="#" className="hover:text-white transition-colors">
-                  법인세 신고
-                </Link>
-              </li>
-              <li>
-                <Link href="#" className="hover:text-white transition-colors">
-                  종합소득세 신고
-                </Link>
-              </li>
-              <li>
-                <Link href="#" className="hover:text-white transition-colors">
-                  부가가치세 신고
-                </Link>
-              </li>
-              <li>
-                <Link href="#" className="hover:text-white transition-colors">
-                  세무 컨설팅
-                </Link>
-              </li>
-            </ul>
+            <h3 className="text-lg font-semibold mb-4">
+              영업시간
+              <span className="block text-sm font-normal text-slate-300 mt-1">OPERATING TIME</span>
+            </h3>
+            <div className="space-y-2 text-sm">
+              <div>
+                <div className="font-medium">월 - 금</div>
+                <div className="text-slate-300">AM 09:30 ~ PM 18:00</div>
+              </div>
+              <div>
+                <div className="font-medium">점심 시간</div>
+                <div className="text-slate-300">PM 12:00 ~ PM 13:00</div>
+              </div>
+            </div>
           </div>
 
-          {/* 고객 지원 */}
+          {/* Contact Info */}
           <div>
-            <h3 className="text-lg font-semibold mb-4">고객 지원</h3>
-            <ul className="space-y-2 text-sm text-slate-300">
-              <li>
-                <Link href="#" className="hover:text-white transition-colors">
-                  자주 묻는 질문
+            <h3 className="text-lg font-semibold mb-4">
+              기본 정보
+              <span className="block text-sm font-normal text-slate-300 mt-1">INFO</span>
+            </h3>
+            <div className="space-y-3 text-sm">
+              <div className="flex items-center">
+                <Phone className="w-4 h-4 mr-2 text-slate-300" />
+                <Link href="tel:02-336-0309" className="hover:text-blue-300 transition-colors">
+                  02-336-0309
                 </Link>
-              </li>
-              <li>
-                <Link href="#" className="hover:text-white transition-colors">
-                  온라인 상담
+              </div>
+              <div className="flex items-start">
+                <MessageCircle className="w-4 h-4 mr-2 mt-0.5 text-slate-300" />
+                <div>
+                  <div className="text-slate-300 text-xs mb-1">카톡 아이디에 다음을 검색하세요</div>
+                  <div className="font-medium">@세무법인 더봄 홍대점</div>
+                </div>
+              </div>
+              <div className="flex items-start">
+                <MapPin className="w-4 h-4 mr-2 mt-0.5 text-slate-300" />
+                <Link
+                  href="https://naver.me/5tJAV6ej"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-blue-300 transition-colors"
+                >
+                  서울특별시 마포구 월드컵북로 4길 47 1층
                 </Link>
-              </li>
-              <li>
-                <Link href="#" className="hover:text-white transition-colors">
-                  방문 예약
-                </Link>
-              </li>
-              <li>
-                <Link href="#" className="hover:text-white transition-colors">
-                  서비스 이용약관
-                </Link>
-              </li>
-              <li>
-                <Link href="#" className="hover:text-white transition-colors">
-                  개인정보처리방침
-                </Link>
-              </li>
-            </ul>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* 소셜 미디어 & 하단 정보 */}
-        <div className="border-t border-slate-700 mt-8 pt-8">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="flex space-x-4 mb-4 md:mb-0">
-              <a
-                href="https://www.youtube.com/@deobom"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:opacity-80 transition-opacity"
-                aria-label="유튜브"
-              >
-                <Image src="/icons/youtube-icon.png" alt="YouTube" width={32} height={32} className="w-8 h-8" />
-              </a>
-              <a
-                href="https://www.instagram.com/deobom_tax"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:opacity-80 transition-opacity"
-                aria-label="인스타그램"
-              >
-                <Image src="/icons/instagram-icon.png" alt="Instagram" width={32} height={32} className="w-8 h-8" />
-              </a>
-              <a
-                href="https://blog.naver.com/deobom_tax"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:opacity-80 transition-opacity"
-                aria-label="네이버 블로그"
-              >
-                <Image src="/icons/naver-blog-icon.png" alt="Naver Blog" width={32} height={32} className="w-8 h-8" />
-              </a>
-            </div>
-            <div className="text-sm text-slate-400">
-              <p>&copy; 2025 세무법인 더봄. All rights reserved.</p>
-            </div>
+        {/* Divider */}
+        <div className="border-t border-slate-700 pt-6">
+          {/* Copyright */}
+          <div className="text-xs text-slate-400 leading-relaxed">
+            <p>
+              세무법인 더봄(홍대점) | 사업자등록번호 : 611-85-07488 | 대표 : 홍지영 | 사업장소재지 : 서울특별시 마포구
+              월드컵북로 4길 47 1층 | 고객센터 : 02-336-0309
+            </p>
+            <p className="mt-2">Copyright 2024. 더봄 세무법인 All rights reserved</p>
           </div>
         </div>
       </div>
