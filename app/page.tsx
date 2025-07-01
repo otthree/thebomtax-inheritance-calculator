@@ -8,7 +8,18 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Calculator, FileText, Zap, TrendingUp, DollarSign, BarChart3, AlertTriangle, Phone } from "lucide-react"
+import {
+  Calculator,
+  FileText,
+  Zap,
+  TrendingUp,
+  DollarSign,
+  BarChart3,
+  AlertTriangle,
+  Phone,
+  Plus,
+  X,
+} from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import ConsultationModal from "@/components/consultation-modal"
@@ -37,7 +48,16 @@ export default function InheritanceTaxCalculator() {
     insurance: "",
     otherAssets: "",
 
-    // 2단계: 증여
+    // 2단계: 증여 (새로운 구조)
+    gifts: [
+      {
+        id: 1,
+        amount: "",
+        relationship: "child", // "spouse" 또는 "child"
+      },
+    ],
+
+    // 기존 호환성을 위해 유지 (계산에서 사용)
     giftProperty: "",
     isSpouse: false,
 
@@ -112,6 +132,84 @@ export default function InheritanceTaxCalculator() {
     calculateTax(newFormData)
   }
 
+  // 증여 항목 추가
+  const addGiftItem = () => {
+    const newGift = {
+      id: Date.now(),
+      amount: "",
+      relationship: "child",
+    }
+    const newFormData = {
+      ...formData,
+      gifts: [...formData.gifts, newGift],
+    }
+    setFormData(newFormData)
+    calculateTax(newFormData)
+  }
+
+  // 증여 항목 삭제
+  const removeGiftItem = (id: number) => {
+    if (formData.gifts.length <= 1) return // 최소 1개는 유지
+
+    const newFormData = {
+      ...formData,
+      gifts: formData.gifts.filter((gift) => gift.id !== id),
+    }
+    setFormData(newFormData)
+    calculateTax(newFormData)
+  }
+
+  // 증여 항목 수정
+  const updateGiftItem = (id: number, field: string, value: string) => {
+    const newGifts = formData.gifts.map((gift) => {
+      if (gift.id === id) {
+        if (field === "amount") {
+          const numericValue = value.replace(/[^0-9]/g, "")
+          const formattedValue = numericValue ? Number(numericValue).toLocaleString("ko-KR") : ""
+          return { ...gift, [field]: formattedValue }
+        } else {
+          return { ...gift, [field]: value }
+        }
+      }
+      return gift
+    })
+
+    const newFormData = { ...formData, gifts: newGifts }
+    setFormData(newFormData)
+    calculateTax(newFormData)
+  }
+
+  const calculateGiftTaxCredit = (amount: number, relationship: string) => {
+    if (amount <= 0) return 0
+
+    const deductionAmount = relationship === "spouse" ? 600000000 : 50000000 // 6억 vs 5천만
+    const taxableAmount = Math.max(0, amount - deductionAmount)
+
+    if (taxableAmount <= 0) return 0
+
+    let taxRate = 0
+    let progressiveDeduction = 0
+
+    if (taxableAmount <= 100000000) {
+      taxRate = 10
+      progressiveDeduction = 0
+    } else if (taxableAmount <= 500000000) {
+      taxRate = 20
+      progressiveDeduction = 10000000
+    } else if (taxableAmount <= 1000000000) {
+      taxRate = 30
+      progressiveDeduction = 60000000
+    } else if (taxableAmount <= 3000000000) {
+      taxRate = 40
+      progressiveDeduction = 160000000
+    } else {
+      taxRate = 50
+      progressiveDeduction = 460000000
+    }
+
+    return Math.max(0, (taxableAmount * taxRate) / 100 - progressiveDeduction)
+  }
+
   const calculateTax = (data: typeof formData) => {
     const convertToWon = (value: string) => {
       const numericValue = value?.replace(/,/g, "") || "0"
@@ -133,7 +231,10 @@ export default function InheritanceTaxCalculator() {
       convertToWon(data.bonds) +
       convertToWon(data.crypto)
 
-    const giftAssetsTotal = convertToWon(data.giftProperty)
+    // 새로운 증여 계산 로직
+    const giftAssetsTotal = data.gifts.reduce((total, gift) => {
+      return total + convertToWon(gift.amount)
+    }, 0)
 
     const otherAssetsTotal = convertToWon(data.vehicle) + convertToWon(data.insurance) + convertToWon(data.otherAssets)
 
@@ -186,35 +287,11 @@ export default function InheritanceTaxCalculator() {
     const taxCalculation = (taxableAmount * taxRate) / 100
     const calculatedTax = Math.max(0, taxCalculation - progressiveDeduction)
 
-    let giftTaxCredit = 0
-    if (giftAssetsTotal > 0) {
-      const giftDeductionAmount = data.isSpouse ? 600000000 : 50000000
-      const deductedGiftAmount = Math.max(0, giftAssetsTotal - giftDeductionAmount)
-
-      if (deductedGiftAmount > 0) {
-        let giftTaxRate = 0
-        let giftProgressiveDeduction = 0
-
-        if (deductedGiftAmount <= 100000000) {
-          giftTaxRate = 10
-          giftProgressiveDeduction = 0
-        } else if (deductedGiftAmount <= 500000000) {
-          giftTaxRate = 20
-          giftProgressiveDeduction = 10000000
-        } else if (deductedGiftAmount <= 1000000000) {
-          giftTaxRate = 30
-          giftProgressiveDeduction = 60000000
-        } else if (deductedGiftAmount <= 3000000000) {
-          giftTaxRate = 40
-          giftProgressiveDeduction = 160000000
-        } else {
-          giftTaxRate = 50
-          giftProgressiveDeduction = 460000000
-        }
-
-        giftTaxCredit = Math.max(0, (deductedGiftAmount * giftTaxRate) / 100 - giftProgressiveDeduction)
-      }
-    }
+    // 새로운 증여세액공제 계산
+    const giftTaxCredit = data.gifts.reduce((total, gift) => {
+      const amount = convertToWon(gift.amount)
+      return total + calculateGiftTaxCredit(amount, gift.relationship)
+    }, 0)
 
     const reportTaxCredit = calculatedTax * 0.03
     const totalTaxCredit = giftTaxCredit + reportTaxCredit
@@ -245,6 +322,21 @@ export default function InheritanceTaxCalculator() {
     }
 
     setCalculationResult(result)
+
+    // 기존 호환성을 위해 업데이트
+    const hasSpouseGift = data.gifts.some((gift) => gift.relationship === "spouse")
+    const totalGiftAmount = data.gifts.reduce((total, gift) => total + convertToWon(gift.amount), 0)
+
+    // 기존 변수들 업데이트 (구글시트 호환성)
+    const updatedFormData = {
+      ...data,
+      giftProperty: (totalGiftAmount / 10000).toLocaleString("ko-KR"),
+      isSpouse: hasSpouseGift,
+    }
+
+    if (JSON.stringify(updatedFormData) !== JSON.stringify(data)) {
+      setFormData(updatedFormData)
+    }
   }
 
   const formatNumber = (num: number) => {
@@ -610,38 +702,82 @@ export default function InheritanceTaxCalculator() {
                   </p>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <div className="grid grid-cols-1 gap-6">
-                    <div>
-                      <Label htmlFor="giftProperty" className="text-sm font-medium">
-                        증여받은 재산 (만원)
-                      </Label>
-                      <Input
-                        id="giftProperty"
-                        placeholder="예: 20,000"
-                        value={formData.giftProperty}
-                        onChange={(e) => handleInputChange("giftProperty", e.target.value)}
-                      />
-                    </div>
+                  <div className="space-y-4">
+                    {formData.gifts.map((gift, index) => (
+                      <div key={gift.id} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                        <div className="flex items-center justify-between mb-4">
+                          <h4 className="text-sm font-medium text-gray-900">증여 {index + 1}</h4>
+                          {formData.gifts.length > 1 && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeGiftItem(gift.id)}
+                              className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <Label className="text-sm font-medium">증여받은 재산 (만원)</Label>
+                            <Input
+                              placeholder="예: 20,000"
+                              value={gift.amount}
+                              onChange={(e) => updateGiftItem(gift.id, "amount", e.target.value)}
+                            />
+                          </div>
+
+                          <div>
+                            <Label className="text-sm font-medium mb-3 block">증여자와의 관계</Label>
+                            <div className="flex space-x-6">
+                              <label className="flex items-center">
+                                <input
+                                  type="radio"
+                                  name={`relationship-${gift.id}`}
+                                  value="spouse"
+                                  checked={gift.relationship === "spouse"}
+                                  onChange={(e) => updateGiftItem(gift.id, "relationship", e.target.value)}
+                                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500"
+                                />
+                                <span className="ml-2 text-sm text-gray-900">배우자</span>
+                              </label>
+                              <label className="flex items-center">
+                                <input
+                                  type="radio"
+                                  name={`relationship-${gift.id}`}
+                                  value="child"
+                                  checked={gift.relationship === "child"}
+                                  onChange={(e) => updateGiftItem(gift.id, "relationship", e.target.value)}
+                                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500"
+                                />
+                                <span className="ml-2 text-sm text-gray-900">자녀</span>
+                              </label>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
 
-                  <div className="flex items-start space-x-3">
-                    <input
-                      type="checkbox"
-                      id="isSpouse"
-                      checked={formData.isSpouse}
-                      onChange={(e) => {
-                        const newFormData = { ...formData, isSpouse: e.target.checked }
-                        setFormData(newFormData)
-                        calculateTax(newFormData)
-                      }}
-                      className="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-                    />
-                    <div>
-                      <label htmlFor="isSpouse" className="text-base font-medium text-gray-900">
-                        상속인이 피상속인의 배우자일 경우 체크해주세요
-                      </label>
-                    </div>
+                  <div className="flex justify-center">
+                    <Button
+                      variant="outline"
+                      onClick={addGiftItem}
+                      className="flex items-center space-x-2 text-blue-600 border-blue-300 hover:bg-blue-50 bg-transparent"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>증여 항목 추가</span>
+                    </Button>
                   </div>
+
+                  <Alert className="bg-blue-50 border-blue-200">
+                    <AlertTriangle className="h-4 w-4 text-blue-600" />
+                    <AlertDescription className="text-blue-800 text-sm">
+                      💡 배우자 증여는 6억원, 자녀 증여는 5천만원까지 공제됩니다.
+                    </AlertDescription>
+                  </Alert>
 
                   <div className="flex justify-between pt-4">
                     <Button variant="outline" onClick={prevStep}>
