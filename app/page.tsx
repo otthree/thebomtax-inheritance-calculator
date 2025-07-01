@@ -977,16 +977,16 @@ export default function InheritanceTaxCalculator() {
               <CardContent className="bg-white text-slate-900">
                 <div className="text-center mb-6 mt-4">
                   <p className="text-sm text-slate-600">예상 상속세</p>
-                  <p className="text-3xl font-bold text-slate-900">{formatNumber(calculationResult.finalTax)}원</p>
+                  <p className="text-3xl font-bold text-slate-900">{formatNumber(calculationResult.finalTax)}만원</p>
                 </div>
                 <div className="space-y-3 text-sm">
                   <div className="flex justify-between">
                     <span className="text-slate-600">총 재산가액</span>
-                    <span className="text-slate-900">{formatNumber(calculationResult.totalAssets)}원</span>
+                    <span className="text-slate-900">{formatNumber(calculationResult.totalAssets)}만원</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-600">과세표준</span>
-                    <span className="text-slate-900">{formatNumber(calculationResult.taxableAmount)}원</span>
+                    <span className="text-slate-900">{formatNumber(calculationResult.taxableAmount)}만원</span>
                   </div>
                 </div>
                 <div className="mt-6 pt-4 border-t border-slate-200">
@@ -994,23 +994,23 @@ export default function InheritanceTaxCalculator() {
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-slate-600">총 재산가액</span>
-                      <span className="text-slate-900">{formatNumber(calculationResult.totalAssets)}원</span>
+                      <span className="text-slate-900">{formatNumber(calculationResult.totalAssets)}만원</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-600">총 채무</span>
-                      <span className="text-red-600">-{formatNumber(calculationResult.totalDebt)}원</span>
+                      <span className="text-red-600">-{formatNumber(calculationResult.totalDebt)}만원</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-600">순 재산가액</span>
-                      <span className="text-slate-900">{formatNumber(calculationResult.netAssets)}원</span>
+                      <span className="text-slate-900">{formatNumber(calculationResult.netAssets)}만원</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-600">공제액</span>
-                      <span className="text-green-600">-{formatNumber(calculationResult.totalDeductions)}원</span>
+                      <span className="text-green-600">-{formatNumber(calculationResult.totalDeductions)}만원</span>
                     </div>
                     <div className="flex justify-between font-medium">
                       <span className="text-slate-600">과세표준</span>
-                      <span className="text-slate-900">{formatNumber(calculationResult.taxableAmount)}원</span>
+                      <span className="text-slate-900">{formatNumber(calculationResult.taxableAmount)}만원</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-600">적용 세율</span>
@@ -1018,15 +1018,15 @@ export default function InheritanceTaxCalculator() {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-600">산출세액</span>
-                      <span className="text-slate-900">{formatNumber(calculationResult.calculatedTax)}원</span>
+                      <span className="text-slate-900">{formatNumber(calculationResult.calculatedTax)}만원</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-600">세액공제</span>
-                      <span className="text-green-600">-{formatNumber(calculationResult.totalTaxCredit)}원</span>
+                      <span className="text-green-600">-{formatNumber(calculationResult.totalTaxCredit)}만원</span>
                     </div>
                     <div className="flex justify-between font-medium">
                       <span className="text-slate-600">최종 상속세</span>
-                      <span className="text-slate-900">{formatNumber(calculationResult.finalTax)}원</span>
+                      <span className="text-slate-900">{formatNumber(calculationResult.finalTax)}만원</span>
                     </div>
                   </div>
                   <Alert className="mt-4 bg-yellow-50 border-yellow-300">
@@ -1051,12 +1051,12 @@ export default function InheritanceTaxCalculator() {
                         <div className="space-y-2 text-sm">
                           <div className="flex justify-between">
                             <span className="text-slate-600">부동산:</span>
-                            <span className="text-slate-900">{formatNumber(calculationResult.realEstateTotal)}원</span>
+                            <span className="text-slate-900">{formatNumber(calculationResult.realEstateTotal)}만원</span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-slate-600">금융자산:</span>
                             <span className="text-slate-900">
-                              {formatNumber(calculationResult.financialAssetsTotal)}원
+                              {formatNumber(calculationResult.financialAssetsTotal)}만원
                             </span>
                           </div>
                           <div className="flex justify-between">
