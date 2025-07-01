@@ -519,7 +519,7 @@ export default function InheritanceTaxCalculator() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
                         <Label htmlFor="realEstate" className="text-sm font-medium">
-                          주거용 부동산 <span className="text-xs text-gray-500">(만원)</span>
+                          주거용 부동산 <span className="text-xs text-gray-500">(단위 : 만원)</span>
                         </Label>
                         <p className="text-xs text-gray-500 mb-2">아파트, 주택, 오피스텔 등</p>
                         <Input
@@ -531,7 +531,7 @@ export default function InheritanceTaxCalculator() {
                       </div>
                       <div>
                         <Label htmlFor="businessProperty" className="text-sm font-medium">
-                          상업용 부동산 <span className="text-xs text-gray-500">(만원)</span>
+                          상업용 부동산 <span className="text-xs text-gray-500">(단위 : 만원)</span>
                         </Label>
                         <p className="text-xs text-gray-500 mb-2">상가, 사무실, 임대용 건물 등</p>
                         <Input
@@ -543,7 +543,7 @@ export default function InheritanceTaxCalculator() {
                       </div>
                       <div>
                         <Label htmlFor="land" className="text-sm font-medium">
-                          토지 <span className="text-xs text-gray-500">(만원)</span>
+                          토지 <span className="text-xs text-gray-500">(단위 : 만원)</span>
                         </Label>
                         <p className="text-xs text-gray-500 mb-2">대지, 전답, 임야, 잡종지 등</p>
                         <Input
@@ -555,7 +555,7 @@ export default function InheritanceTaxCalculator() {
                       </div>
                       <div>
                         <Label htmlFor="otherRealEstate" className="text-sm font-medium">
-                          기타 부동산 <span className="text-xs text-gray-500">(만원)</span>
+                          기타 부동산 <span className="text-xs text-gray-500">(단위 : 만원)</span>
                         </Label>
                         <p className="text-xs text-gray-500 mb-2">펜션, 창고, 공장 등</p>
                         <Input
@@ -574,7 +574,7 @@ export default function InheritanceTaxCalculator() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
                         <Label htmlFor="deposit" className="text-sm font-medium">
-                          예금 <span className="text-xs text-gray-500">(만원)</span>
+                          예금 <span className="text-xs text-gray-500">(단위 : 만원)</span>
                         </Label>
                         <Input
                           id="deposit"
@@ -585,7 +585,7 @@ export default function InheritanceTaxCalculator() {
                       </div>
                       <div>
                         <Label htmlFor="savings" className="text-sm font-medium">
-                          적금 <span className="text-xs text-gray-500">(만원)</span>
+                          적금 <span className="text-xs text-gray-500">(단위 : 만원)</span>
                         </Label>
                         <Input
                           id="savings"
@@ -596,7 +596,7 @@ export default function InheritanceTaxCalculator() {
                       </div>
                       <div>
                         <Label htmlFor="stocks" className="text-sm font-medium">
-                          주식 <span className="text-xs text-gray-500">(만원)</span>
+                          주식 <span className="text-xs text-gray-500">(단위 : 만원)</span>
                         </Label>
                         <Input
                           id="stocks"
@@ -607,7 +607,7 @@ export default function InheritanceTaxCalculator() {
                       </div>
                       <div>
                         <Label htmlFor="funds" className="text-sm font-medium">
-                          펀드 <span className="text-xs text-gray-500">(만원)</span>
+                          펀드 <span className="text-xs text-gray-500">(단위 : 만원)</span>
                         </Label>
                         <Input
                           id="funds"
@@ -618,7 +618,7 @@ export default function InheritanceTaxCalculator() {
                       </div>
                       <div>
                         <Label htmlFor="bonds" className="text-sm font-medium">
-                          채권 <span className="text-xs text-gray-500">(만원)</span>
+                          채권 <span className="text-xs text-gray-500">(단위 : 만원)</span>
                         </Label>
                         <Input
                           id="bonds"
@@ -629,7 +629,7 @@ export default function InheritanceTaxCalculator() {
                       </div>
                       <div>
                         <Label htmlFor="crypto" className="text-sm font-medium">
-                          암호화폐 <span className="text-xs text-gray-500">(만원)</span>
+                          암호화폐 <span className="text-xs text-gray-500">(단위 : 만원)</span>
                         </Label>
                         <Input
                           id="crypto"
@@ -647,7 +647,7 @@ export default function InheritanceTaxCalculator() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
                         <Label htmlFor="vehicle" className="text-sm font-medium">
-                          차량 <span className="text-xs text-gray-500">(만원)</span>
+                          차량 <span className="text-xs text-gray-500">(단위 : 만원)</span>
                         </Label>
                         <Input
                           id="vehicle"
@@ -658,7 +658,7 @@ export default function InheritanceTaxCalculator() {
                       </div>
                       <div>
                         <Label htmlFor="insurance" className="text-sm font-medium">
-                          보험금 <span className="text-xs text-gray-500">(만원)</span>
+                          보험금 <span className="text-xs text-gray-500">(단위 : 만원)</span>
                         </Label>
                         <Input
                           id="insurance"
@@ -669,7 +669,7 @@ export default function InheritanceTaxCalculator() {
                       </div>
                       <div>
                         <Label htmlFor="otherAssets" className="text-sm font-medium">
-                          기타 자산 <span className="text-xs text-gray-500">(만원)</span>
+                          기타 자산 <span className="text-xs text-gray-500">(단위 : 만원)</span>
                         </Label>
                         <Input
                           id="otherAssets"
@@ -722,7 +722,7 @@ export default function InheritanceTaxCalculator() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
                             <Label className="text-sm font-medium">
-                              증여받은 재산 <span className="text-xs text-gray-500">(만원)</span>
+                              증여받은 재산 <span className="text-xs text-gray-500">(단위 : 만원)</span>
                             </Label>
                             <Input
                               placeholder="예: 20,000"
@@ -803,7 +803,7 @@ export default function InheritanceTaxCalculator() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <Label htmlFor="mortgageLoan" className="text-sm font-medium">
-                        주택담보대출 <span className="text-xs text-gray-500">(만원)</span>
+                        주택담보대출 <span className="text-xs text-gray-500">(단위 : 만원)</span>
                       </Label>
                       <Input
                         id="mortgageLoan"
@@ -814,7 +814,7 @@ export default function InheritanceTaxCalculator() {
                     </div>
                     <div>
                       <Label htmlFor="creditLoan" className="text-sm font-medium">
-                        신용대출 <span className="text-xs text-gray-500">(만원)</span>
+                        신용대출 <span className="text-xs text-gray-500">(단위 : 만원)</span>
                       </Label>
                       <Input
                         id="creditLoan"
@@ -825,7 +825,7 @@ export default function InheritanceTaxCalculator() {
                     </div>
                     <div>
                       <Label htmlFor="cardDebt" className="text-sm font-medium">
-                        카드대금 <span className="text-xs text-gray-500">(만원)</span>
+                        카드대금 <span className="text-xs text-gray-500">(단위 : 만원)</span>
                       </Label>
                       <Input
                         id="cardDebt"
@@ -836,7 +836,7 @@ export default function InheritanceTaxCalculator() {
                     </div>
                     <div>
                       <Label htmlFor="funeralExpense" className="text-sm font-medium">
-                        장례비 (1500만원 한도) <span className="text-xs text-gray-500">(만원)</span>
+                        장례비 (1500만원 한도) <span className="text-xs text-gray-500">(단위 : 만원)</span>
                       </Label>
                       <Input
                         id="funeralExpense"
@@ -847,7 +847,7 @@ export default function InheritanceTaxCalculator() {
                     </div>
                     <div>
                       <Label htmlFor="taxArrears" className="text-sm font-medium">
-                        소득세 미납액 <span className="text-xs text-gray-500">(만원)</span>
+                        소득세 미납액 <span className="text-xs text-gray-500">(단위 : 만원)</span>
                       </Label>
                       <Input
                         id="taxArrears"
@@ -858,7 +858,7 @@ export default function InheritanceTaxCalculator() {
                     </div>
                     <div>
                       <Label htmlFor="otherDebt" className="text-sm font-medium">
-                        기타 채무 <span className="text-xs text-gray-500">(만원)</span>
+                        기타 채무 <span className="text-xs text-gray-500">(단위 : 만원)</span>
                       </Label>
                       <Input
                         id="otherDebt"
