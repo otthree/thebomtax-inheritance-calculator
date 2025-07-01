@@ -72,6 +72,7 @@ export default function ResultPage() {
   }, [])
 
   const formatNumber = (num: number) => {
+    // 만원 단위로 변환하고 반올림
     const rounded = Math.round(num / 10000)
     return rounded.toLocaleString("ko-KR")
   }
