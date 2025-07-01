@@ -786,7 +786,7 @@ export default function InheritanceTaxCalculator() {
                         <label htmlFor="spouseDeduction" className="text-base font-medium text-gray-900">
                           배우자 공제
                         </label>
-                        <p className="text-sm text-gray-600">배우자 상속분에 경우 최소 5억원 보장</p>
+                        <p className="text-sm text-gray-600">배우자 있을 경우 최소 5억원 보장</p>
                       </div>
                     </div>
 
