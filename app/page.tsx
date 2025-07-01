@@ -1123,20 +1123,20 @@ export default function InheritanceTaxCalculator() {
                         <div className="space-y-2 text-sm">
                           <div className="flex justify-between">
                             <span className="text-slate-600">일괄공제:</span>
-                            <span className="text-slate-900">{formData.basicDeduction ? "500,000,000" : "0"}원</span>
+                            <span className="text-slate-900">{formData.basicDeduction ? "50,000" : "0"}만원</span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-slate-600">배우자공제:</span>
-                            <span className="text-slate-900">{formData.spouseDeduction ? "500,000,000" : "0"}원</span>
+                            <span className="text-slate-900">{formData.spouseDeduction ? "50,000" : "0"}만원</span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-slate-600">동거주택 상속공제:</span>
-                            <span className="text-slate-900">{formData.housingDeduction ? "600,000,000" : "0"}원</span>
+                            <span className="text-slate-900">{formData.housingDeduction ? "60,000" : "0"}만원</span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-slate-600">금융자산 상속공제:</span>
                             <span className="text-slate-900">
-                              {formatNumber(calculationResult.financialDeduction)}원
+                              {formatNumber(calculationResult.financialDeduction)}만원
                             </span>
                           </div>
                           <div className="flex justify-between font-medium pt-2 border-t border-slate-200">
