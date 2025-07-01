@@ -8,6 +8,19 @@ const fail = (msg: string, status = 500, extra: Record<string, unknown> = {}) =>
 const isRedirectOrOk = (res: Response) =>
   (res.status >= 200 && res.status < 300) || (res.status >= 300 && res.status < 400)
 
+/** JSON.stringify 가 BigInt, Infinity, NaN 등을 만나면 throw 난다.
+ *  API 전체가 500으로 깨지지 않게 모든 특수값을 문자열이나 null 로 치환한다. */
+const safeStringify = (data: unknown) =>
+  JSON.stringify(
+    data,
+    (_k, v) => {
+      if (typeof v === "bigint") return v.toString()
+      if (typeof v === "number" && !Number.isFinite(v)) return null // NaN, ±Infinity
+      return v
+    },
+    2,
+  )
+
 /**
  * 상담 신청 API
  * - 어떤 상황에서도 JSON(Response)만 반환
@@ -31,17 +44,23 @@ export async function POST(request: NextRequest) {
 
     // 3) Google Script 호출
     let scriptRes: Response
+    let bodyPayload: string
+    try {
+      bodyPayload = safeStringify({
+        name: String(name).trim(),
+        phone: String(phone).trim(),
+        message: String(message).trim(),
+        calculationData,
+        timestamp: new Date().toISOString(),
+      })
+    } catch (err) {
+      return fail("요청 직렬화 오류", 500, { debug: (err as Error).message })
+    }
     try {
       scriptRes = await fetch(googleScriptUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: String(name).trim(),
-          phone: String(phone).trim(),
-          message: String(message).trim(),
-          calculationData,
-          timestamp: new Date().toISOString(),
-        }),
+        body: bodyPayload,
         redirect: "follow",
       })
     } catch (err) {
