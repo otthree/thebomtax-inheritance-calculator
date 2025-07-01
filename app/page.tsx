@@ -87,7 +87,7 @@ export default function InheritanceTaxCalculator() {
   const steps = [
     { number: 1, name: "재산", active: currentStep >= 1 },
     { number: 2, name: "증여", active: currentStep >= 2 },
-    { number: 3, name: "채무및비용", active: currentStep >= 3 },
+    { number: 3, name: "채무 및 비용", active: currentStep >= 3 },
     { number: 4, name: "공제혜택", active: currentStep >= 4 },
   ]
 
