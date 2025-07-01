@@ -1109,7 +1109,7 @@ export default function InheritanceTaxCalculator() {
                         <div className="space-y-2 text-sm">
                           <div className="flex justify-between">
                             <span className="text-slate-600">총 재산가액 - 총 채무:</span>
-                            <span className="text-green-700">{formatNumber(calculationResult.netAssets)}원</span>
+                            <span className="text-green-700">{formatNumber(calculationResult.netAssets)}만원</span>
                           </div>
                           <div className="text-xs text-slate-500">
                             {formatNumber(calculationResult.totalAssets)} - {formatNumber(calculationResult.totalDebt)}{" "}
