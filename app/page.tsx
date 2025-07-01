@@ -777,7 +777,7 @@ export default function InheritanceTaxCalculator() {
                   <Alert className="bg-blue-50 border-blue-200">
                     <AlertTriangle className="h-4 w-4 text-blue-600" />
                     <AlertDescription className="text-blue-800 text-sm">
-                      💡 배우자 증여는 6억원, 자녀 증여는 5천만원까지 공제됩니다.
+                      💡 사전증여가 있는 경우 기납부세액은 차감됩니다.
                     </AlertDescription>
                   </Alert>
 
