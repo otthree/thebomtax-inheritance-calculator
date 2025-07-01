@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
 import { Calculator, FileText, Plus, X } from "lucide-react"
 import { Footer } from "@/components/footer"
-import { ConsultationModal } from "@/components/consultation-modal"
+import ConsultationModal from "@/components/consultation-modal"
 import Image from "next/image"
 
 interface FormData {
