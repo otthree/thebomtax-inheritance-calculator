@@ -309,12 +309,12 @@ export default function ResultPage() {
           <CardContent className="text-center py-8">
             <p className="text-lg text-slate-600 mb-2">최종 상속세</p>
             <p className="text-4xl font-bold text-blue-600 mb-4">
-              {formatNumber(calculationData.calculationResult.finalTax)}원
+              {formatNumber(calculationData.calculationResult.finalTax)}만원
             </p>
             <p className="text-sm text-slate-500">
-              과세표준 {formatNumber(calculationData.calculationResult.taxableAmount)}원 ×{" "}
+              과세표준 {formatNumber(calculationData.calculationResult.taxableAmount)}만원 ×{" "}
               {calculationData.calculationResult.taxRate}% - 누진공제{" "}
-              {formatNumber(calculationData.calculationResult.progressiveDeduction)}원
+              {formatNumber(calculationData.calculationResult.progressiveDeduction)}만원
             </p>
           </CardContent>
         </Card>
@@ -327,18 +327,18 @@ export default function ResultPage() {
             <div className="space-y-3">
               <div className="flex justify-between py-2">
                 <span className="text-slate-600">총 재산가액</span>
-                <span className="font-medium">{formatNumber(calculationData.calculationResult.totalAssets)}원</span>
+                <span className="font-medium">{formatNumber(calculationData.calculationResult.totalAssets)}만원</span>
               </div>
               <div className="flex justify-between py-2">
                 <span className="text-slate-600">총 공제액</span>
                 <span className="font-medium text-green-600">
-                  -{formatNumber(calculationData.calculationResult.totalDeductions)}원
+                  -{formatNumber(calculationData.calculationResult.totalDeductions)}만원
                 </span>
               </div>
               <hr />
               <div className="flex justify-between py-2">
                 <span className="text-slate-600">과세표준</span>
-                <span className="font-medium">{formatNumber(calculationData.calculationResult.taxableAmount)}원</span>
+                <span className="font-medium">{formatNumber(calculationData.calculationResult.taxableAmount)}만원</span>
               </div>
               <div className="flex justify-between py-2">
                 <span className="text-slate-600">적용 세율</span>
@@ -347,13 +347,13 @@ export default function ResultPage() {
               <div className="flex justify-between py-2">
                 <span className="text-slate-600">누진공제</span>
                 <span className="font-medium text-green-600">
-                  -{formatNumber(calculationData.calculationResult.progressiveDeduction)}원
+                  -{formatNumber(calculationData.calculationResult.progressiveDeduction)}만원
                 </span>
               </div>
               <hr />
               <div className="flex justify-between py-2 font-bold text-lg">
                 <span className="text-slate-600">최종 상속세</span>
-                <span className="text-blue-600">{formatNumber(calculationData.calculationResult.finalTax)}원</span>
+                <span className="text-blue-600">{formatNumber(calculationData.calculationResult.finalTax)}만원</span>
               </div>
             </div>
           </CardContent>
