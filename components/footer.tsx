@@ -1,4 +1,4 @@
-import { Phone, MessageCircle, MapPin, Youtube, Instagram, FileText } from "lucide-react"
+import { Phone, MessageCircle, MapPin } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 
@@ -20,28 +20,46 @@ export function Footer() {
                 href="https://www.youtube.com/@택스퀸"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-10 h-10 bg-red-600 rounded-full flex items-center justify-center hover:bg-red-700 transition-colors"
+                className="w-10 h-10 rounded-full flex items-center justify-center hover:opacity-80 transition-opacity"
                 aria-label="유튜브"
               >
-                <Youtube className="w-5 h-5" />
+                <Image
+                  src="/icons/youtube-icon.png"
+                  alt="YouTube"
+                  width={40}
+                  height={40}
+                  className="w-10 h-10 rounded-lg"
+                />
               </Link>
               <Link
                 href="https://www.instagram.com/hong_taxqueen/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center hover:from-purple-600 hover:to-pink-600 transition-colors"
+                className="w-10 h-10 rounded-full flex items-center justify-center hover:opacity-80 transition-opacity"
                 aria-label="인스타그램"
               >
-                <Instagram className="w-5 h-5" />
+                <Image
+                  src="/icons/instagram-icon.png"
+                  alt="Instagram"
+                  width={40}
+                  height={40}
+                  className="w-10 h-10 rounded-lg"
+                />
               </Link>
               <Link
                 href="https://blog.naver.com/l77155"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center hover:bg-green-700 transition-colors"
+                className="w-10 h-10 rounded-full flex items-center justify-center hover:opacity-80 transition-opacity"
                 aria-label="네이버 블로그"
               >
-                <FileText className="w-5 h-5" />
+                <Image
+                  src="/icons/naver-blog-icon.png"
+                  alt="네이버 블로그"
+                  width={40}
+                  height={40}
+                  className="w-10 h-10 rounded-lg"
+                />
               </Link>
             </div>
           </div>
