@@ -1070,7 +1070,7 @@ export default function InheritanceTaxCalculator() {
               <CardContent className="bg-white text-slate-900">
                 <div className="text-center mb-6 mt-4">
                   <p className="text-sm text-slate-600">예상 상속세</p>
-                  <p className="text-3xl font-bold text-slate-900">{formatNumber(calculationResult.finalTax)}</p>
+                  <p className="text-3xl font-bold text-slate-900">{formatNumber(calculationResult.finalTax)}만원</p>
                 </div>
                 <div className="space-y-3 text-sm">
                   <div className="flex justify-between">
