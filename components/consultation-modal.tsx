@@ -47,57 +47,42 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
     setErrorMessage("")
 
     try {
-      const submissionData = {
-        ...formData,
-        calculationData,
-        timestamp: new Date().toISOString(),
-      }
-
       const response = await fetch("/api/consultation", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(submissionData),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...formData,
+          calculationData,
+          timestamp: new Date().toISOString(),
+        }),
       })
 
-      let result
-      const contentType = response.headers.get("content-type")
+      // 1️⃣—Always attempt to read the body _as text_ first.
+      const raw = await response.text()
 
-      if (contentType && contentType.includes("application/json")) {
-        try {
-          result = await response.json()
-        } catch (parseError) {
-          console.error("Failed to parse JSON response:", parseError)
-          if (response.ok) {
-            result = { success: true, message: "상담 신청이 완료되었습니다." }
-          } else {
-            throw new Error("서버 응답을 처리할 수 없습니다.")
-          }
-        }
-      } else {
-        const textResponse = await response.text()
-        console.log("Non-JSON response received:", textResponse)
-
-        if (response.ok) {
-          result = { success: true, message: "상담 신청이 완료되었습니다." }
-        } else {
-          throw new Error("서버에서 오류가 발생했습니다.")
-        }
+      // 2️⃣—If JSON parse succeeds, use it; otherwise fabricate a minimal object.
+      let parsed: any
+      try {
+        parsed = raw ? JSON.parse(raw) : {}
+      } catch {
+        parsed = {}
       }
 
-      if (result.success) {
+      // 3️⃣—Normalise the success flag.
+      const ok =
+        response.status >= 200 && response.status < 400 && (parsed.success === undefined ? true : parsed.success)
+
+      if (ok) {
         setSubmitStatus("success")
         setFormData({ name: "", phone: "", message: "" })
         setPrivacyAgreed(false)
       } else {
-        setSubmitStatus("error")
-        setErrorMessage(result.message || "상담 신청 중 오류가 발생했습니다.")
+        throw new Error(parsed.message || parsed.error || "상담 신청에 실패했습니다.")
       }
-    } catch (error) {
-      console.error("Consultation submission error:", error)
+    } catch (err) {
+      console.error("Consultation submission error:", err)
       setSubmitStatus("error")
-      setErrorMessage("상담 신청 중 오류가 발생했습니다. 다시 시도해주세요.")
+      setErrorMessage(err instanceof Error ? err.message : "서버에서 알 수 없는 오류가 발생했습니다.")
     } finally {
       setIsSubmitting(false)
     }
@@ -173,9 +158,7 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
                   >
                     개인정보 수집 및 이용에 동의합니다 *
                   </Label>
-                  <p className="text-xs text-muted-foreground">
-                    수집된 개인정보는 상담 목적으로만 사용됩니다.
-                  </p>
+                  <p className="text-xs text-muted-foreground">수집된 개인정보는 상담 목적으로만 사용됩니다.</p>
                 </div>
               </div>
 
