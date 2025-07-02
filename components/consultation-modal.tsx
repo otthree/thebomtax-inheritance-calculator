@@ -22,7 +22,6 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
-    email: "",
     message: "",
   })
   const [privacyAgreed, setPrivacyAgreed] = useState(false)
@@ -89,7 +88,7 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
 
       if (result.success) {
         setSubmitStatus("success")
-        setFormData({ name: "", phone: "", email: "", message: "" })
+        setFormData({ name: "", phone: "", message: "" })
         setPrivacyAgreed(false)
       } else {
         setSubmitStatus("error")
@@ -148,17 +147,6 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
                     placeholder="010-1234-5678"
                   />
                 </div>
-              </div>
-
-              <div>
-                <Label htmlFor="email">이메일</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => handleInputChange("email", e.target.value)}
-                  placeholder="example@email.com"
-                />
               </div>
 
               <div>
@@ -228,7 +216,7 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
             <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded">
               <p className="font-medium mb-1">개인정보 처리 안내</p>
               <p>
-                • 수집항목: 이름, 연락처, 이메일, 상담내용
+                • 수집항목: 이름, 연락처, 상담내용
                 <br />• 수집목적: 상속세 관련 전문 상담 제공
                 <br />• 보유기간: 상담 완료 후 1년 (관련 법령에 따라 연장 가능)
                 <br />• 귀하는 개인정보 수집·이용에 대한 동의를 거부할 권리가 있으나, 동의를 거부할 경우 상담 서비스
