@@ -174,7 +174,7 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
                     개인정보 수집 및 이용에 동의합니다 *
                   </Label>
                   <p className="text-xs text-muted-foreground">
-                    수집된 개인정보는 상담 목적으로만 사용되며, 상담 완료 후 안전하게 폐기됩니다.
+                    수집된 개인정보는 상담 목적으로만 사용됩니다.
                   </p>
                 </div>
               </div>
