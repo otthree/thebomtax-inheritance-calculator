@@ -597,7 +597,7 @@ export default function InheritanceTaxCalculator() {
                         <Label htmlFor="otherRealEstate" className="text-sm font-medium">
                           기타 부동산 <span className="text-xs text-gray-500">(단위 : 만원)</span>
                         </Label>
-                        <p className="text-xs text-gray-500 mb-2">펜션, 창고, 공장 등</p>
+                        <p className="text-xs text-gray-500 mb-2">별장 등</p>
                         <Input
                           id="otherRealEstate"
                           placeholder="예: 10,000"
@@ -689,7 +689,7 @@ export default function InheritanceTaxCalculator() {
                       </div>
                       <div>
                         <Label htmlFor="crypto" className="text-sm font-medium">
-                          암호화폐 <span className="text-xs text-gray-500">(단위 : 만원)</span>
+                          보험금 <span className="text-xs text-gray-500">(단위 : 만원)</span>
                         </Label>
                         <Input
                           id="crypto"
@@ -724,7 +724,7 @@ export default function InheritanceTaxCalculator() {
                       </div>
                       <div>
                         <Label htmlFor="insurance" className="text-sm font-medium">
-                          보험금 <span className="text-xs text-gray-500">(단위 : 만원)</span>
+                          암호화폐 <span className="text-xs text-gray-500">(단위 : 만원)</span>
                         </Label>
                         <Input
                           id="insurance"
