@@ -61,30 +61,45 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
 
       // Always attempt to read the body as text first.
       const raw = await response.text()
+      console.log("Server response:", raw)
 
       // If JSON parse succeeds, use it; otherwise fabricate a minimal object.
       let parsed: any
       try {
         parsed = raw ? JSON.parse(raw) : {}
-      } catch {
+      } catch (parseError) {
+        console.log("JSON parse failed:", parseError)
         parsed = {}
       }
 
       // Normalise the success flag.
-      const ok =
-        response.status >= 200 && response.status < 400 && (parsed.success === undefined ? true : parsed.success)
+      const ok = response.ok && (parsed.success === undefined ? true : parsed.success)
 
       if (ok) {
         // 성공 시 consultation-success 페이지로 이동
         onClose()
         router.push("/consultation-success")
       } else {
-        throw new Error(parsed.message || parsed.error || "상담 신청에 실패했습니다.")
+        // 더 구체적인 오류 메시지 제공
+        let errorMsg = "상담 신청에 실패했습니다."
+
+        if (response.status >= 500) {
+          errorMsg = "서버에 일시적인 문제가 발생했습니다. 잠시 후 다시 시도해주세요."
+        } else if (response.status >= 400) {
+          errorMsg = parsed.message || "입력하신 정보를 확인해주세요."
+        }
+
+        throw new Error(errorMsg)
       }
     } catch (err) {
       console.error("Consultation submission error:", err)
       setSubmitStatus("error")
-      setErrorMessage(err instanceof Error ? err.message : "서버에서 알 수 없는 오류가 발생했습니다.")
+
+      if (err instanceof TypeError && err.message.includes("fetch")) {
+        setErrorMessage("네트워크 연결을 확인해주세요.")
+      } else {
+        setErrorMessage(err instanceof Error ? err.message : "알 수 없는 오류가 발생했습니다.")
+      }
     } finally {
       setIsSubmitting(false)
     }
