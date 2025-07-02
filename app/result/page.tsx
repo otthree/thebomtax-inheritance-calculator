@@ -113,6 +113,7 @@ export default function ResultPage() {
   }, [])
 
   const convertWonToKoreanAmount = (amount: number): string => {
+    amount = amount/10000
     if (amount === 0) return "0(원)"
 
     const units = ["", "만", "억", "조"]
