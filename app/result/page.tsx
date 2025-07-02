@@ -112,9 +112,28 @@ export default function ResultPage() {
     setLoading(false)
   }, [])
 
+  const convertWonToKoreanAmount = (amount: number): string => {
+    if (amount === 0) return "0(원)"
+
+    const units = ["", "만", "억", "조"]
+    const result = []
+    let tempAmount = Math.abs(amount)
+
+    for (let i = 0; i < units.length && tempAmount > 0; i++) {
+      const remainder = tempAmount % 10000
+      if (remainder > 0) {
+        result.unshift(`${remainder.toLocaleString("ko-KR")}${units[i]}`)
+      }
+      tempAmount = Math.floor(tempAmount / 10000)
+    }
+
+    const koreanAmount = result.join(" ")
+    return `${amount < 0 ? "-" : ""}${koreanAmount}(원)`
+  }
+
   const formatNumber = (num: number) => {
     const rounded = Math.round(num / 10000)
-    return rounded.toLocaleString("ko-KR")
+    return convertWonToKoreanAmount(rounded * 10000)
   }
 
   const handleFeeCheck = () => {
@@ -163,7 +182,7 @@ export default function ResultPage() {
     const shareUrl = generateShareUrl()
     const shareData = {
       title: "상속세 계산 결과",
-      text: `상속세 계산 결과: ${formatNumber(calculationData.calculationResult.finalTax)}원`,
+      text: `상속세 계산 결과: ${convertWonToKoreanAmount(calculationData.calculationResult.finalTax * 10000)}`,
       url: shareUrl,
     }
 
@@ -309,12 +328,12 @@ export default function ResultPage() {
           <CardContent className="text-center py-8">
             <p className="text-lg text-slate-600 mb-2">최종 상속세</p>
             <p className="text-4xl font-bold text-blue-600 mb-4">
-              {formatNumber(calculationData.calculationResult.finalTax)}만원
+              {convertWonToKoreanAmount(calculationData.calculationResult.finalTax * 10000)}
             </p>
             <p className="text-sm text-slate-500">
-              과세표준 {formatNumber(calculationData.calculationResult.taxableAmount)}만원 ×{" "}
+              과세표준 {convertWonToKoreanAmount(calculationData.calculationResult.taxableAmount * 10000)} ×{" "}
               {calculationData.calculationResult.taxRate}% - 누진공제{" "}
-              {formatNumber(calculationData.calculationResult.progressiveDeduction)}만원
+              {convertWonToKoreanAmount(calculationData.calculationResult.progressiveDeduction * 10000)}
             </p>
           </CardContent>
         </Card>
@@ -327,18 +346,22 @@ export default function ResultPage() {
             <div className="space-y-3">
               <div className="flex justify-between py-2">
                 <span className="text-slate-600">총 재산가액</span>
-                <span className="font-medium">{formatNumber(calculationData.calculationResult.totalAssets)}만원</span>
+                <span className="font-medium">
+                  {convertWonToKoreanAmount(calculationData.calculationResult.totalAssets * 10000)}
+                </span>
               </div>
               <div className="flex justify-between py-2">
                 <span className="text-slate-600">총 공제액</span>
                 <span className="font-medium text-green-600">
-                  -{formatNumber(calculationData.calculationResult.totalDeductions)}만원
+                  -{convertWonToKoreanAmount(calculationData.calculationResult.totalDeductions * 10000)}
                 </span>
               </div>
               <hr />
               <div className="flex justify-between py-2">
                 <span className="text-slate-600">과세표준</span>
-                <span className="font-medium">{formatNumber(calculationData.calculationResult.taxableAmount)}만원</span>
+                <span className="font-medium">
+                  {convertWonToKoreanAmount(calculationData.calculationResult.taxableAmount * 10000)}
+                </span>
               </div>
               <div className="flex justify-between py-2">
                 <span className="text-slate-600">적용 세율</span>
@@ -347,13 +370,15 @@ export default function ResultPage() {
               <div className="flex justify-between py-2">
                 <span className="text-slate-600">누진공제</span>
                 <span className="font-medium text-green-600">
-                  -{formatNumber(calculationData.calculationResult.progressiveDeduction)}만원
+                  -{convertWonToKoreanAmount(calculationData.calculationResult.progressiveDeduction * 10000)}
                 </span>
               </div>
               <hr />
               <div className="flex justify-between py-2 font-bold text-lg">
                 <span className="text-slate-600">최종 상속세</span>
-                <span className="text-blue-600">{formatNumber(calculationData.calculationResult.finalTax)}만원</span>
+                <span className="text-blue-600">
+                  {convertWonToKoreanAmount(calculationData.calculationResult.finalTax * 10000)}
+                </span>
               </div>
             </div>
           </CardContent>
