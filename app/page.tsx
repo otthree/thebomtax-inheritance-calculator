@@ -123,6 +123,33 @@ export default function InheritanceTaxCalculator() {
     }
   }, [formData, formData.isSpouse])
 
+  // 숫자를 한글 금액으로 변환하는 함수
+  const convertToKoreanAmount = (value: string) => {
+    if (!value || value === "0") return ""
+
+    const numericValue = value.replace(/,/g, "")
+    const number = Number.parseInt(numericValue)
+
+    if (isNaN(number) || number === 0) return ""
+
+    const units = ["", "만", "억", "조"]
+    const result = []
+
+    let tempNumber = number
+    let unitIndex = 0
+
+    while (tempNumber > 0 && unitIndex < units.length) {
+      const remainder = tempNumber % 10000
+      if (remainder > 0) {
+        result.unshift(`${remainder.toLocaleString("ko-KR")}${units[unitIndex]}`)
+      }
+      tempNumber = Math.floor(tempNumber / 10000)
+      unitIndex++
+    }
+
+    return result.join(" ") + "원"
+  }
+
   const handleInputChange = (field: string, value: string) => {
     const numericValue = value.replace(/[^0-9]/g, "")
     const formattedValue = numericValue ? Number(numericValue).toLocaleString("ko-KR") : ""
@@ -527,7 +554,13 @@ export default function InheritanceTaxCalculator() {
                           placeholder="예: 80,000"
                           value={formData.realEstate}
                           onChange={(e) => handleInputChange("realEstate", e.target.value)}
+                          className="text-right"
                         />
+                        {formData.realEstate && (
+                          <p className="text-xs text-gray-400 mt-1 text-right">
+                            {convertToKoreanAmount(formData.realEstate)}
+                          </p>
+                        )}
                       </div>
                       <div>
                         <Label htmlFor="businessProperty" className="text-sm font-medium">
@@ -539,7 +572,13 @@ export default function InheritanceTaxCalculator() {
                           placeholder="예: 50,000"
                           value={formData.businessProperty}
                           onChange={(e) => handleInputChange("businessProperty", e.target.value)}
+                          className="text-right"
                         />
+                        {formData.businessProperty && (
+                          <p className="text-xs text-gray-400 mt-1 text-right">
+                            {convertToKoreanAmount(formData.businessProperty)}
+                          </p>
+                        )}
                       </div>
                       <div>
                         <Label htmlFor="land" className="text-sm font-medium">
@@ -551,7 +590,13 @@ export default function InheritanceTaxCalculator() {
                           placeholder="예: 30,000"
                           value={formData.land}
                           onChange={(e) => handleInputChange("land", e.target.value)}
+                          className="text-right"
                         />
+                        {formData.land && (
+                          <p className="text-xs text-gray-400 mt-1 text-right">
+                            {convertToKoreanAmount(formData.land)}
+                          </p>
+                        )}
                       </div>
                       <div>
                         <Label htmlFor="otherRealEstate" className="text-sm font-medium">
@@ -563,7 +608,13 @@ export default function InheritanceTaxCalculator() {
                           placeholder="예: 10,000"
                           value={formData.otherRealEstate}
                           onChange={(e) => handleInputChange("otherRealEstate", e.target.value)}
+                          className="text-right"
                         />
+                        {formData.otherRealEstate && (
+                          <p className="text-xs text-gray-400 mt-1 text-right">
+                            {convertToKoreanAmount(formData.otherRealEstate)}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -581,7 +632,13 @@ export default function InheritanceTaxCalculator() {
                           placeholder="예: 5,000"
                           value={formData.deposit}
                           onChange={(e) => handleInputChange("deposit", e.target.value)}
+                          className="text-right"
                         />
+                        {formData.deposit && (
+                          <p className="text-xs text-gray-400 mt-1 text-right">
+                            {convertToKoreanAmount(formData.deposit)}
+                          </p>
+                        )}
                       </div>
                       <div>
                         <Label htmlFor="savings" className="text-sm font-medium">
@@ -592,7 +649,13 @@ export default function InheritanceTaxCalculator() {
                           placeholder="예: 3,000"
                           value={formData.savings}
                           onChange={(e) => handleInputChange("savings", e.target.value)}
+                          className="text-right"
                         />
+                        {formData.savings && (
+                          <p className="text-xs text-gray-400 mt-1 text-right">
+                            {convertToKoreanAmount(formData.savings)}
+                          </p>
+                        )}
                       </div>
                       <div>
                         <Label htmlFor="stocks" className="text-sm font-medium">
@@ -603,7 +666,13 @@ export default function InheritanceTaxCalculator() {
                           placeholder="예: 5,000"
                           value={formData.stocks}
                           onChange={(e) => handleInputChange("stocks", e.target.value)}
+                          className="text-right"
                         />
+                        {formData.stocks && (
+                          <p className="text-xs text-gray-400 mt-1 text-right">
+                            {convertToKoreanAmount(formData.stocks)}
+                          </p>
+                        )}
                       </div>
                       <div>
                         <Label htmlFor="funds" className="text-sm font-medium">
@@ -614,7 +683,13 @@ export default function InheritanceTaxCalculator() {
                           placeholder="예: 2,000"
                           value={formData.funds}
                           onChange={(e) => handleInputChange("funds", e.target.value)}
+                          className="text-right"
                         />
+                        {formData.funds && (
+                          <p className="text-xs text-gray-400 mt-1 text-right">
+                            {convertToKoreanAmount(formData.funds)}
+                          </p>
+                        )}
                       </div>
                       <div>
                         <Label htmlFor="bonds" className="text-sm font-medium">
@@ -625,7 +700,13 @@ export default function InheritanceTaxCalculator() {
                           placeholder="예: 1,000"
                           value={formData.bonds}
                           onChange={(e) => handleInputChange("bonds", e.target.value)}
+                          className="text-right"
                         />
+                        {formData.bonds && (
+                          <p className="text-xs text-gray-400 mt-1 text-right">
+                            {convertToKoreanAmount(formData.bonds)}
+                          </p>
+                        )}
                       </div>
                       <div>
                         <Label htmlFor="crypto" className="text-sm font-medium">
@@ -636,7 +717,13 @@ export default function InheritanceTaxCalculator() {
                           placeholder="예: 1,000"
                           value={formData.crypto}
                           onChange={(e) => handleInputChange("crypto", e.target.value)}
+                          className="text-right"
                         />
+                        {formData.crypto && (
+                          <p className="text-xs text-gray-400 mt-1 text-right">
+                            {convertToKoreanAmount(formData.crypto)}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -654,7 +741,13 @@ export default function InheritanceTaxCalculator() {
                           placeholder="예: 3,000"
                           value={formData.vehicle}
                           onChange={(e) => handleInputChange("vehicle", e.target.value)}
+                          className="text-right"
                         />
+                        {formData.vehicle && (
+                          <p className="text-xs text-gray-400 mt-1 text-right">
+                            {convertToKoreanAmount(formData.vehicle)}
+                          </p>
+                        )}
                       </div>
                       <div>
                         <Label htmlFor="insurance" className="text-sm font-medium">
@@ -665,7 +758,13 @@ export default function InheritanceTaxCalculator() {
                           placeholder="예: 3,000"
                           value={formData.insurance}
                           onChange={(e) => handleInputChange("insurance", e.target.value)}
+                          className="text-right"
                         />
+                        {formData.insurance && (
+                          <p className="text-xs text-gray-400 mt-1 text-right">
+                            {convertToKoreanAmount(formData.insurance)}
+                          </p>
+                        )}
                       </div>
                       <div>
                         <Label htmlFor="otherAssets" className="text-sm font-medium">
@@ -676,7 +775,13 @@ export default function InheritanceTaxCalculator() {
                           placeholder="예: 2,000"
                           value={formData.otherAssets}
                           onChange={(e) => handleInputChange("otherAssets", e.target.value)}
+                          className="text-right"
                         />
+                        {formData.otherAssets && (
+                          <p className="text-xs text-gray-400 mt-1 text-right">
+                            {convertToKoreanAmount(formData.otherAssets)}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -728,7 +833,13 @@ export default function InheritanceTaxCalculator() {
                               placeholder="예: 20,000"
                               value={gift.amount}
                               onChange={(e) => updateGiftItem(gift.id, "amount", e.target.value)}
+                              className="text-right"
                             />
+                            {gift.amount && (
+                              <p className="text-xs text-gray-400 mt-1 text-right">
+                                {convertToKoreanAmount(gift.amount)}
+                              </p>
+                            )}
                           </div>
 
                           <div>
@@ -810,7 +921,13 @@ export default function InheritanceTaxCalculator() {
                         placeholder="예: 20,000"
                         value={formData.mortgageLoan}
                         onChange={(e) => handleInputChange("mortgageLoan", e.target.value)}
+                        className="text-right"
                       />
+                      {formData.mortgageLoan && (
+                        <p className="text-xs text-gray-400 mt-1 text-right">
+                          {convertToKoreanAmount(formData.mortgageLoan)}
+                        </p>
+                      )}
                     </div>
                     <div>
                       <Label htmlFor="creditLoan" className="text-sm font-medium">
@@ -821,7 +938,13 @@ export default function InheritanceTaxCalculator() {
                         placeholder="예: 3,000"
                         value={formData.creditLoan}
                         onChange={(e) => handleInputChange("creditLoan", e.target.value)}
+                        className="text-right"
                       />
+                      {formData.creditLoan && (
+                        <p className="text-xs text-gray-400 mt-1 text-right">
+                          {convertToKoreanAmount(formData.creditLoan)}
+                        </p>
+                      )}
                     </div>
                     <div>
                       <Label htmlFor="cardDebt" className="text-sm font-medium">
@@ -832,7 +955,13 @@ export default function InheritanceTaxCalculator() {
                         placeholder="예: 500"
                         value={formData.cardDebt}
                         onChange={(e) => handleInputChange("cardDebt", e.target.value)}
+                        className="text-right"
                       />
+                      {formData.cardDebt && (
+                        <p className="text-xs text-gray-400 mt-1 text-right">
+                          {convertToKoreanAmount(formData.cardDebt)}
+                        </p>
+                      )}
                     </div>
                     <div>
                       <Label htmlFor="funeralExpense" className="text-sm font-medium">
@@ -843,7 +972,13 @@ export default function InheritanceTaxCalculator() {
                         placeholder="예: 1,000"
                         value={formData.funeralExpense}
                         onChange={(e) => handleInputChange("funeralExpense", e.target.value)}
+                        className="text-right"
                       />
+                      {formData.funeralExpense && (
+                        <p className="text-xs text-gray-400 mt-1 text-right">
+                          {convertToKoreanAmount(formData.funeralExpense)}
+                        </p>
+                      )}
                     </div>
                     <div>
                       <Label htmlFor="taxArrears" className="text-sm font-medium">
@@ -854,7 +989,13 @@ export default function InheritanceTaxCalculator() {
                         placeholder="예: 3,000"
                         value={formData.taxArrears}
                         onChange={(e) => handleInputChange("taxArrears", e.target.value)}
+                        className="text-right"
                       />
+                      {formData.taxArrears && (
+                        <p className="text-xs text-gray-400 mt-1 text-right">
+                          {convertToKoreanAmount(formData.taxArrears)}
+                        </p>
+                      )}
                     </div>
                     <div>
                       <Label htmlFor="otherDebt" className="text-sm font-medium">
@@ -865,7 +1006,13 @@ export default function InheritanceTaxCalculator() {
                         placeholder="예: 5,000"
                         value={formData.otherDebt}
                         onChange={(e) => handleInputChange("otherDebt", e.target.value)}
+                        className="text-right"
                       />
+                      {formData.otherDebt && (
+                        <p className="text-xs text-gray-400 mt-1 text-right">
+                          {convertToKoreanAmount(formData.otherDebt)}
+                        </p>
+                      )}
                     </div>
                   </div>
                   <div className="flex justify-between pt-4">
@@ -1051,7 +1198,9 @@ export default function InheritanceTaxCalculator() {
                         <div className="space-y-2 text-sm">
                           <div className="flex justify-between">
                             <span className="text-slate-600">부동산:</span>
-                            <span className="text-slate-900">{formatNumber(calculationResult.realEstateTotal)}만원</span>
+                            <span className="text-slate-900">
+                              {formatNumber(calculationResult.realEstateTotal)}만원
+                            </span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-slate-600">금융자산:</span>
@@ -1061,11 +1210,15 @@ export default function InheritanceTaxCalculator() {
                           </div>
                           <div className="flex justify-between">
                             <span className="text-slate-600">사전증여자산:</span>
-                            <span className="text-slate-900">{formatNumber(calculationResult.giftAssetsTotal)}만원</span>
+                            <span className="text-slate-900">
+                              {formatNumber(calculationResult.giftAssetsTotal)}만원
+                            </span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-slate-600">기타자산:</span>
-                            <span className="text-slate-900">{formatNumber(calculationResult.otherAssetsTotal)}만원</span>
+                            <span className="text-slate-900">
+                              {formatNumber(calculationResult.otherAssetsTotal)}만원
+                            </span>
                           </div>
                           <div className="flex justify-between font-medium pt-2 border-t border-slate-200">
                             <span className="text-slate-600">총 재산가액:</span>
@@ -1091,7 +1244,9 @@ export default function InheritanceTaxCalculator() {
                           </div>
                           <div className="flex justify-between">
                             <span className="text-slate-600">세금미납:</span>
-                            <span className="text-slate-900">{formatNumber(calculationResult.taxArrearsTotal)}만원</span>
+                            <span className="text-slate-900">
+                              {formatNumber(calculationResult.taxArrearsTotal)}만원
+                            </span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-slate-600">기타채무:</span>
@@ -1141,7 +1296,9 @@ export default function InheritanceTaxCalculator() {
                           </div>
                           <div className="flex justify-between font-medium pt-2 border-t border-slate-200">
                             <span className="text-slate-600">총 공제액:</span>
-                            <span className="text-purple-700">{formatNumber(calculationResult.totalDeductions)}만원</span>
+                            <span className="text-purple-700">
+                              {formatNumber(calculationResult.totalDeductions)}만원
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -1194,11 +1351,15 @@ export default function InheritanceTaxCalculator() {
                           </div>
                           <div className="flex justify-between">
                             <span className="text-slate-600">신고세액공제:</span>
-                            <span className="text-slate-900">{formatNumber(calculationResult.reportTaxCredit)}만원</span>
+                            <span className="text-slate-900">
+                              {formatNumber(calculationResult.reportTaxCredit)}만원
+                            </span>
                           </div>
                           <div className="flex justify-between font-medium pt-2 border-t border-slate-200">
                             <span className="text-slate-600">세액공제 합계:</span>
-                            <span className="text-indigo-700">{formatNumber(calculationResult.totalTaxCredit)}만원</span>
+                            <span className="text-indigo-700">
+                              {formatNumber(calculationResult.totalTaxCredit)}만원
+                            </span>
                           </div>
                           <div className="flex justify-between font-bold pt-2 border-t border-slate-200">
                             <span className="text-slate-600">최종 상속세:</span>
