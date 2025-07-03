@@ -1001,7 +1001,7 @@ export default function InheritanceTaxCalculator() {
                             </div>
                             <div>
                               <Label htmlFor="spouseExpectedInheritance" className="text-sm font-medium">
-                                배우자 예상 상속재산 <span className="text-xs text-gray-500">(단위: 만원)</span>
+                                배우자 상속액 <span className="text-xs text-gray-500">(단위: 만원)</span>
                               </Label>
                               <Input
                                 id="spouseExpectedInheritance"
