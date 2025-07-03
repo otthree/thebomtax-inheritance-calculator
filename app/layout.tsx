@@ -44,22 +44,47 @@ export default function RootLayout({
         </ThemeProvider>
         <Script id="kakao-init" strategy="afterInteractive">
           {`
-            function initKakao() {
-              if (typeof window !== 'undefined' && window.Kakao) {
+            function initKakaoSDK() {
+              console.log('Kakao SDK 초기화 시도...');
+              
+              if (typeof window === 'undefined') {
+                console.log('Window 객체가 없음');
+                return;
+              }
+              
+              if (!window.Kakao) {
+                console.log('Kakao 객체가 없음, 재시도...');
+                setTimeout(initKakaoSDK, 200);
+                return;
+              }
+              
+              const appKey = '${process.env.NEXT_PUBLIC_KAKAO_APP_KEY}';
+              console.log('Kakao App Key:', appKey ? '설정됨' : '설정되지 않음');
+              
+              if (!appKey) {
+                console.error('NEXT_PUBLIC_KAKAO_APP_KEY가 설정되지 않았습니다.');
+                return;
+              }
+              
+              try {
                 if (!window.Kakao.isInitialized()) {
-                  try {
-                    window.Kakao.init('${process.env.NEXT_PUBLIC_KAKAO_APP_KEY}');
-                    console.log('Kakao SDK 초기화 성공');
-                  } catch (error) {
-                    console.error('Kakao SDK 초기화 실패:', error);
-                  }
+                  window.Kakao.init(appKey);
+                  console.log('✅ Kakao SDK 초기화 성공!');
+                  console.log('Kakao SDK 버전:', window.Kakao.VERSION);
+                } else {
+                  console.log('✅ Kakao SDK 이미 초기화됨');
                 }
-              } else {
-                console.log('Kakao SDK 로딩 대기 중...');
-                setTimeout(initKakao, 100);
+              } catch (error) {
+                console.error('❌ Kakao SDK 초기화 실패:', error);
               }
             }
-            initKakao();
+            
+            // DOM이 로드된 후 초기화 시도
+            if (document.readyState === 'loading') {
+              document.addEventListener('DOMContentLoaded', initKakaoSDK);
+            } else {
+              initKakaoSDK();
+            }
           `}
         </Script>
       </body>

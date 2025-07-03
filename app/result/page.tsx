@@ -97,14 +97,26 @@ export default function ResultPage() {
 
   // Kakao SDK 준비 상태 확인
   useEffect(() => {
+    let checkCount = 0
+    const maxChecks = 50 // 최대 5초 대기 (100ms * 50)
+
     const checkKakaoReady = () => {
+      checkCount++
+
       if (typeof window !== "undefined" && window.Kakao && window.Kakao.isInitialized()) {
         setKakaoReady(true)
-        console.log("Kakao SDK 준비 완료")
-      } else {
+        console.log("✅ Kakao SDK 준비 완료")
+        return
+      }
+
+      if (checkCount < maxChecks) {
         setTimeout(checkKakaoReady, 100)
+      } else {
+        console.log("❌ Kakao SDK 초기화 시간 초과")
+        setKakaoReady(false)
       }
     }
+
     checkKakaoReady()
   }, [])
 
@@ -229,9 +241,10 @@ export default function ResultPage() {
   const handleKakaoShare = () => {
     if (!calculationData) return
 
-    // Kakao SDK 준비 상태 확인
-    if (!kakaoReady) {
-      alert("카카오톡 SDK가 아직 준비되지 않았습니다. 잠시 후 다시 시도해주세요.")
+    // Kakao SDK 최종 확인
+    if (typeof window === "undefined" || !window.Kakao || !window.Kakao.isInitialized()) {
+      alert("카카오톡 SDK를 사용할 수 없습니다. 링크를 복사합니다.")
+      handleCopyLink()
       return
     }
 
@@ -267,8 +280,9 @@ export default function ResultPage() {
           },
         ],
       })
+      console.log("✅ 카카오톡 공유 성공")
     } catch (error) {
-      console.error("카카오톡 공유 실패:", error)
+      console.error("❌ 카카오톡 공유 실패:", error)
 
       // 에러 코드별 상세 메시지
       let errorMessage = "카카오톡 공유에 실패했습니다."
@@ -520,10 +534,9 @@ export default function ResultPage() {
                     variant="ghost"
                     className="w-full justify-start text-left hover:bg-gray-50"
                     onClick={handleKakaoShare}
-                    disabled={!kakaoReady}
                   >
                     <MessageCircle className="w-4 h-4 mr-2" />
-                    카카오톡 공유 {!kakaoReady && "(준비중)"}
+                    카카오톡 공유
                   </Button>
                   <Button
                     variant="ghost"

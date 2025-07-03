@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Loader2, CheckCircle, AlertCircle, Phone, MessageCircle } from "lucide-react"
+import { CheckCircle, AlertCircle, Loader2, Phone, MessageCircle } from "lucide-react"
 
 interface CalculationData {
   totalAssets: number
@@ -24,7 +24,7 @@ interface CalculationData {
   housingDeduction: boolean
   realEstateTotal: number
   financialAssetsTotal: number
-  giftAssetsTotal?: number
+  giftAssetsTotal: number
   otherAssetsTotal: number
   financialDebtTotal: number
   funeralExpenseTotal: number
@@ -32,11 +32,11 @@ interface CalculationData {
   otherDebtTotal: number
   totalDeductions: number
   financialDeduction: number
-  calculatedTax?: number
-  giftTaxCredit?: number
-  reportTaxCredit?: number
-  totalTaxCredit?: number
-  spouseDeductionAmount?: number
+  calculatedTax: number
+  giftTaxCredit: number
+  reportTaxCredit: number
+  totalTaxCredit: number
+  spouseDeductionAmount: number
 }
 
 interface ConsultationModalProps {
@@ -71,10 +71,7 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
     setErrorMessage("")
 
     try {
-      console.log("상담 신청 데이터 전송 시작:", {
-        formData,
-        calculationData: calculationData ? "있음" : "없음",
-      })
+      console.log("상담 신청 데이터 전송 시작:", { formData, calculationData })
 
       const response = await fetch("/api/consultation", {
         method: "POST",
@@ -89,39 +86,43 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
       })
 
       console.log("API 응답 상태:", response.status, response.statusText)
-      console.log("응답 헤더:", Object.fromEntries(response.headers.entries()))
+
+      // Content-Type 헤더 확인
+      const contentType = response.headers.get("content-type")
+      console.log("응답 Content-Type:", contentType)
 
       let responseData
-      const contentType = response.headers.get("content-type")
-
       if (contentType && contentType.includes("application/json")) {
         responseData = await response.json()
         console.log("JSON 응답 데이터:", responseData)
       } else {
-        const textResponse = await response.text()
-        console.log("텍스트 응답:", textResponse)
-        responseData = { message: textResponse }
+        const textData = await response.text()
+        console.log("텍스트 응답 데이터:", textData)
+        responseData = { message: textData }
       }
 
       if (response.ok) {
-        console.log("상담 신청 성공")
         setSubmitStatus("success")
-        setFormData({ name: "", phone: "", email: "", message: "" })
+        console.log("상담 신청 성공")
 
         // 3초 후 모달 닫기
         setTimeout(() => {
           onClose()
           setSubmitStatus("idle")
+          setFormData({ name: "", phone: "", email: "", message: "" })
         }, 3000)
       } else {
-        console.error("상담 신청 실패:", response.status, responseData)
-        setSubmitStatus("error")
-        setErrorMessage(responseData.message || `서버 오류 (${response.status})`)
+        throw new Error(responseData.message || `HTTP ${response.status}: ${response.statusText}`)
       }
     } catch (error) {
-      console.error("상담 신청 중 오류 발생:", error)
+      console.error("상담 신청 실패:", error)
       setSubmitStatus("error")
-      setErrorMessage(error instanceof Error ? error.message : "알 수 없는 오류가 발생했습니다.")
+
+      if (error instanceof Error) {
+        setErrorMessage(error.message)
+      } else {
+        setErrorMessage("알 수 없는 오류가 발생했습니다.")
+      }
     } finally {
       setIsSubmitting(false)
     }
@@ -147,59 +148,62 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
             <p className="text-slate-600 mb-4">
               빠른 시일 내에 전문 세무사가 연락드리겠습니다.
               <br />
-              평일 오전 9시~오후 6시 내에 연락드립니다.
+              감사합니다.
             </p>
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <div className="flex items-center justify-center space-x-2 text-blue-700">
-                <Phone className="w-4 h-4" />
-                <span className="font-medium">긴급 상담: 02-336-0309</span>
-              </div>
+            <div className="bg-slate-50 p-4 rounded-lg">
+              <p className="text-sm text-slate-600">
+                <Phone className="w-4 h-4 inline mr-1" />
+                급한 문의사항이 있으시면
+                <br />
+                <strong>02-336-0309</strong>로 연락주세요.
+              </p>
             </div>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             {calculationData && (
-              <div className="bg-slate-50 p-4 rounded-lg mb-4">
-                <h4 className="font-medium mb-2">계산 결과 요약</h4>
-                <div className="text-sm space-y-1">
+              <div className="bg-blue-50 p-4 rounded-lg mb-4">
+                <h4 className="font-semibold mb-2 text-blue-800">계산 결과 요약</h4>
+                <div className="text-sm space-y-1 text-blue-700">
                   <div className="flex justify-between">
                     <span>상속재산 총액:</span>
                     <span className="font-medium">{formatNumber(calculationData.totalAssets)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>예상 상속세:</span>
-                    <span className="font-medium text-blue-600">{formatNumber(calculationData.finalTax)}</span>
+                    <span className="font-bold text-blue-600">{formatNumber(calculationData.finalTax)}</span>
                   </div>
                 </div>
               </div>
             )}
 
-            <div className="space-y-2">
-              <Label htmlFor="name">이름 *</Label>
-              <Input
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                required
-                placeholder="홍길동"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="name">성함 *</Label>
+                <Input
+                  id="name"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="홍길동"
+                />
+              </div>
+              <div>
+                <Label htmlFor="phone">연락처 *</Label>
+                <Input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  value={formData.phone}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="010-1234-5678"
+                />
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="phone">연락처 *</Label>
-              <Input
-                id="phone"
-                name="phone"
-                type="tel"
-                value={formData.phone}
-                onChange={handleInputChange}
-                required
-                placeholder="010-1234-5678"
-              />
-            </div>
-
-            <div className="space-y-2">
+            <div>
               <Label htmlFor="email">이메일</Label>
               <Input
                 id="email"
@@ -211,7 +215,7 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
               />
             </div>
 
-            <div className="space-y-2">
+            <div>
               <Label htmlFor="message">상담 내용</Label>
               <Textarea
                 id="message"
@@ -229,23 +233,30 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
                 <AlertDescription className="text-red-800">
                   <strong>상담 신청 실패</strong>
                   <br />
-                  {errorMessage}
-                  <br />
-                  <br />
-                  문제가 지속되면 직접 연락주세요: 02-336-0309
+                  {errorMessage || "잠시 후 다시 시도해주세요."}
                 </AlertDescription>
               </Alert>
             )}
 
-            <div className="flex space-x-3 pt-4">
-              <Button type="button" variant="outline" onClick={onClose} className="flex-1 bg-transparent">
+            <div className="flex gap-3 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                className="flex-1 bg-transparent"
+                disabled={isSubmitting}
+              >
                 취소
               </Button>
-              <Button type="submit" disabled={isSubmitting} className="flex-1 bg-blue-600 hover:bg-blue-700">
+              <Button
+                type="submit"
+                className="flex-1 bg-blue-600 hover:bg-blue-700"
+                disabled={isSubmitting || !formData.name || !formData.phone}
+              >
                 {isSubmitting ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    전송 중...
+                    전송중...
                   </>
                 ) : (
                   <>
