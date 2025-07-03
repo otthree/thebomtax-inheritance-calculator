@@ -79,17 +79,33 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
 
       console.log("API 응답 상태:", response.status)
 
-      // 응답 본문 읽기
+      // ---------- 응답 본문 및 타입 확인 ----------
       let responseData: any = {}
-      const responseText = await response.text()
-      console.log("API 응답 본문:", responseText)
+      let responseText = ""
 
-      // JSON 파싱 시도
+      const isJson = response.headers.get("content-type")?.toLowerCase().includes("application/json")
+
       try {
-        responseData = responseText ? JSON.parse(responseText) : {}
+        if (isJson) {
+          // JSON 응답인 경우
+          responseData = await response.json()
+          console.log("API JSON 응답:", responseData)
+        } else {
+          // JSON 이 아닌 경우 (예: 내부 서버 오류 HTML, 일반 텍스트 등)
+          responseText = await response.text()
+          console.warn("API 비-JSON 응답:", responseText.substring(0, 200))
+          responseData = {
+            success: false,
+            message: responseText || "서버 응답 형식 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
+          }
+        }
       } catch (parseError) {
-        console.error("JSON 파싱 실패:", parseError)
-        responseData = { success: false, message: "서버 응답 형식 오류" }
+        // JSON 파싱 실패 등 예외 처리
+        console.error("응답 처리 실패:", parseError)
+        responseData = {
+          success: false,
+          message: "서버 응답 처리 중 오류가 발생했습니다.",
+        }
       }
 
       // 성공 처리
