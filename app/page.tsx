@@ -1271,16 +1271,13 @@ export default function InheritanceTaxCalculator() {
 
                       <div className="bg-gradient-to-r from-slate-700 to-slate-800 rounded-lg p-4 text-center text-white">
                         <div className="flex items-center justify-center mb-2">
-                          <span className="mr-2">🧮</span>
-                          <span className="font-semibold">최종 계산 결과</span>
+                          <span className="mr-2"></span>
+                          <span className="font-semibold">최종 상속세</span>
                         </div>
                         <div className="text-2xl font-bold mb-1">
-                          최종 상속세: {convertWonToKoreanAmount(calculationResult.finalTax)}
+                          {convertWonToKoreanAmount(calculationResult.finalTax)}
                         </div>
-                        <div className="text-sm opacity-90">
-                          산출세액: {convertWonToKoreanAmount(calculationResult.calculatedTax)} - 세액공제:{" "}
-                          {convertWonToKoreanAmount(calculationResult.totalTaxCredit)}
-                        </div>
+                        
                       </div>
                     </div>
                   )}
