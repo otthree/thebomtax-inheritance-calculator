@@ -1019,8 +1019,7 @@ export default function InheritanceTaxCalculator() {
                           <Alert className="bg-blue-100 border-blue-300">
                             <AlertTriangle className="h-4 w-4 text-blue-600" />
                             <AlertDescription className="text-blue-800 text-xs">
-                              💡 자녀수가 0인 경우 부모수를 자녀수로 계산합니다. 배우자 공제액은 최소 5억원, 최대
-                              30억원입니다.
+                              💡 자녀수와 부모수는 피상속인의 자녀수와 부모수를 의미합니다.
                             </AlertDescription>
                           </Alert>
                         </div>
