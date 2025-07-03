@@ -643,34 +643,6 @@ export default function InheritanceTaxCalculator() {
                     <p className="text-sm text-gray-600 mb-4">대여금, 차량 등 기타 자산을 입력해주세요</p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
-                        <Label htmlFor="vehicle" className="text-sm font-medium">
-                          차량 <span className="text-xs text-gray-500">(단위 : 만원)</span>
-                        </Label>
-                        <Input
-                          id="vehicle"
-                          placeholder="예: 3,000"
-                          value={formData.vehicle}
-                          onChange={(e) => handleInputChange("vehicle", e.target.value)}
-                        />
-                        {formData.vehicle && (
-                          <p className="text-xs text-gray-400 mt-1">{convertToKoreanAmount(formData.vehicle)}</p>
-                        )}
-                      </div>
-                      <div>
-                        <Label htmlFor="insurance" className="text-sm font-medium">
-                          암호화폐 <span className="text-xs text-gray-500">(단위 : 만원)</span>
-                        </Label>
-                        <Input
-                          id="insurance"
-                          placeholder="예: 3,000"
-                          value={formData.insurance}
-                          onChange={(e) => handleInputChange("insurance", e.target.value)}
-                        />
-                        {formData.insurance && (
-                          <p className="text-xs text-gray-400 mt-1">{convertToKoreanAmount(formData.insurance)}</p>
-                        )}
-                      </div>
-                      <div>
                         <Label htmlFor="otherAssets" className="text-sm font-medium">
                           기타 자산 <span className="text-xs text-gray-500">(단위 : 만원)</span>
                         </Label>
