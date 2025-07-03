@@ -1079,16 +1079,7 @@ export default function InheritanceTaxCalculator() {
                     {convertWonToKoreanAmount(calculationResult.finalTax)}
                   </p>
                 </div>
-                <div className="space-y-3 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-slate-600">총 재산가액</span>
-                    <span className="text-slate-900">{convertWonToKoreanAmount(calculationResult.totalAssets)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-600">과세표준</span>
-                    <span className="text-slate-900">{convertWonToKoreanAmount(calculationResult.taxableAmount)}</span>
-                  </div>
-                </div>
+                
                 <div className="mt-6 pt-4 border-t border-slate-200">
                   <h4 className="font-medium mb-3 text-slate-900">상세 내역</h4>
                   <div className="space-y-2 text-sm">
