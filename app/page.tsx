@@ -1329,11 +1329,11 @@ export default function InheritanceTaxCalculator() {
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-slate-600 rounded-full"></div>
-                  <span>배우자공제: 5억원</span>
+                  <span>배우자공제: 최소 5억원</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-slate-600 rounded-full"></div>
-                  <span>동거주택 상속공제: 6억원</span>
+                  <span>동거주택 상속공제: 최대 6억원</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-slate-600 rounded-full"></div>
