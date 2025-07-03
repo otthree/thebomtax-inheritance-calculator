@@ -91,34 +91,43 @@ export default function ResultPage() {
   const [isSharing, setIsSharing] = useState(false)
   const [showShareOptions, setShowShareOptions] = useState(false)
 
-  useEffect(() => {
-    const sharedData = searchParams.get("data")
+  // ──────────────────────────────────────────────────────────
+  // Load calculation data only when the ?data= query changes
+  // ──────────────────────────────────────────────────────────
+  const dataParam = searchParams.get("data") // stable primitive value
 
-    if (sharedData) {
-      try {
-        const decodedData = JSON.parse(decodeURIComponent(sharedData))
-        setCalculationData(decodedData)
-      } catch (error) {
-        router.push("/")
-        return
-      }
-    } else {
-      const savedData = localStorage.getItem("inheritanceTaxCalculation")
-      if (savedData) {
+  useEffect(() => {
+    // Helper to parse the incoming payload or localStorage
+    const loadCalculationData = () => {
+      if (dataParam) {
         try {
-          const data = JSON.parse(savedData)
-          setCalculationData(data)
-        } catch (error) {
-          router.push("/")
+          const decoded = JSON.parse(decodeURIComponent(dataParam))
+          setCalculationData(decoded)
+          return
+        } catch {
+          router.replace("/") // malformed payload → 홈으로
           return
         }
-      } else {
-        router.push("/")
-        return
       }
+
+      const saved = localStorage.getItem("inheritanceTaxCalculation")
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved)
+          setCalculationData(parsed)
+          return
+        } catch {
+          /* ignore and fallthrough */
+        }
+      }
+
+      router.replace("/") // 아무 데이터도 없으면 홈으로
     }
-    setLoading(false)
-  }, [router, searchParams])
+
+    loadCalculationData()
+    setLoading(false) // 끝나면 로딩 해제
+    // ⚠️  dataParam (string) is stable; router is static
+  }, [dataParam, router])
 
   const convertWonToKoreanAmount = (amount: number): string => {
     amount = amount / 10000
