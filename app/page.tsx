@@ -609,7 +609,7 @@ export default function InheritanceTaxCalculator() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
                         <Label htmlFor="deposit" className="text-sm font-medium">
-                          예금 <span className="text-xs text-gray-500">(단위 : 만원)</span>
+                          예/적금 <span className="text-xs text-gray-500">(단위 : 만원)</span>
                         </Label>
                         <Input
                           id="deposit"
@@ -622,22 +622,8 @@ export default function InheritanceTaxCalculator() {
                         )}
                       </div>
                       <div>
-                        <Label htmlFor="savings" className="text-sm font-medium">
-                          적금 <span className="text-xs text-gray-500">(단위 : 만원)</span>
-                        </Label>
-                        <Input
-                          id="savings"
-                          placeholder="예: 3,000"
-                          value={formData.savings}
-                          onChange={(e) => handleInputChange("savings", e.target.value)}
-                        />
-                        {formData.savings && (
-                          <p className="text-xs text-gray-400 mt-1">{convertToKoreanAmount(formData.savings)}</p>
-                        )}
-                      </div>
-                      <div>
                         <Label htmlFor="stocks" className="text-sm font-medium">
-                          주식 <span className="text-xs text-gray-500">(단위 : 만원)</span>
+                          기타 금융자산 <span className="text-xs text-gray-500">(단위 : 만원)</span>
                         </Label>
                         <Input
                           id="stocks"
@@ -647,48 +633,6 @@ export default function InheritanceTaxCalculator() {
                         />
                         {formData.stocks && (
                           <p className="text-xs text-gray-400 mt-1">{convertToKoreanAmount(formData.stocks)}</p>
-                        )}
-                      </div>
-                      <div>
-                        <Label htmlFor="funds" className="text-sm font-medium">
-                          펀드 <span className="text-xs text-gray-500">(단위 : 만원)</span>
-                        </Label>
-                        <Input
-                          id="funds"
-                          placeholder="예: 2,000"
-                          value={formData.funds}
-                          onChange={(e) => handleInputChange("funds", e.target.value)}
-                        />
-                        {formData.funds && (
-                          <p className="text-xs text-gray-400 mt-1">{convertToKoreanAmount(formData.funds)}</p>
-                        )}
-                      </div>
-                      <div>
-                        <Label htmlFor="bonds" className="text-sm font-medium">
-                          채권 <span className="text-xs text-gray-500">(단위 : 만원)</span>
-                        </Label>
-                        <Input
-                          id="bonds"
-                          placeholder="예: 1,000"
-                          value={formData.bonds}
-                          onChange={(e) => handleInputChange("bonds", e.target.value)}
-                        />
-                        {formData.bonds && (
-                          <p className="text-xs text-gray-400 mt-1">{convertToKoreanAmount(formData.bonds)}</p>
-                        )}
-                      </div>
-                      <div>
-                        <Label htmlFor="crypto" className="text-sm font-medium">
-                          보험금 <span className="text-xs text-gray-500">(단위 : 만원)</span>
-                        </Label>
-                        <Input
-                          id="crypto"
-                          placeholder="예: 1,000"
-                          value={formData.crypto}
-                          onChange={(e) => handleInputChange("crypto", e.target.value)}
-                        />
-                        {formData.crypto && (
-                          <p className="text-xs text-gray-400 mt-1">{convertToKoreanAmount(formData.crypto)}</p>
                         )}
                       </div>
                     </div>
