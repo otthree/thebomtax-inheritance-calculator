@@ -8,9 +8,11 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { AlertTriangle, Plus, X } from "lucide-react"
+import { AlertTriangle, Phone, Plus, X } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
+import ConsultationModal from "@/components/consultation-modal"
+import { Footer } from "@/components/footer"
 
 export default function InheritanceTaxCalculator() {
   const router = useRouter()
@@ -1238,4 +1240,34 @@ export default function InheritanceTaxCalculator() {
                           <div>✓ 배우자공제: 5억원</div>
                           <div>✓ 동거주택 상속공제: 6억원</div>
                           <div>✓ 금융자산 상속공제: 순금융자산의 20% (최대 2억원)</div>
-                        \
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="mt-6 pt-4 border-t border-slate-200">
+                    <Button
+                      onClick={() => setIsConsultationModalOpen(true)}
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      <Phone className="w-4 h-4 mr-2" />
+                      전문가 상담 신청
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+
+      <ConsultationModal
+        isOpen={isConsultationModalOpen}
+        onClose={() => setIsConsultationModalOpen(false)}
+        calculationData={consultationData}
+      />
+
+      <Footer />
+    </div>
+  )
+}
