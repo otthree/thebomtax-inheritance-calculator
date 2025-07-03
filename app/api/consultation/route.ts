@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
 
     if (!scriptUrl) {
       console.error("Google Script URL not configured")
-      return NextResponse.json({ success: false, message: "서버 설정 오류가 발생했습니다." }, { status: 500 })
+      return NextResponse.json({ success: false, message: "서버 설정 오류가 발생했습���다." }, { status: 500 })
     }
 
     // 계산 데이터를 안전하게 직렬화
