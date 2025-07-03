@@ -219,7 +219,7 @@ export default function ResultPage() {
           content: {
             title: "상속세 계산 결과",
             description: `예상되는 최종상속세는 ${finalTaxAmount}입니다.\n\n지금 바로 상속세 계산하기`,
-            imageUrl: `${window.location.origin}/logo-deobom-blue.png`,
+            imageUrl: `${window.location.origin}/logo-thebom-square-blue.png`,
             link: {
               mobileWebUrl: shareUrl,
               webUrl: shareUrl,
