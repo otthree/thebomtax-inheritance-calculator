@@ -1263,8 +1263,8 @@ export default function InheritanceTaxCalculator() {
                         </div>
                         <div className="mt-3 pt-3 border-t border-slate-200 space-y-1 text-xs text-slate-500">
                           <div>✓ 일괄공제: 5억원</div>
-                          <div>✓ 배우자공제: 5억원</div>
-                          <div>✓ 동거주택 상속공제: 6억원</div>
+                          <div>✓ 배우자공제: 최소 5억원</div>
+                          <div>✓ 동거주택 상속공제: 최대 6억원</div>
                           <div>✓ 금융자산 상속공제: 순금융자산의 20% (최대 2억원)</div>
                         </div>
                       </div>
