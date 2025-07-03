@@ -257,7 +257,7 @@ export default function ResultPage() {
         content: {
           title: "상속세 계산 결과 | 세무법인 더봄",
           description: `예상되는 최종상속세는 ${finalTaxAmount}입니다.\n\n정확한 상속세 계산과 전문가 상담을 받아보세요.`,
-          imageUrl: `${window.location.origin}/logo-deobom-blue.png`,
+          imageUrl: `${window.location.origin}/logo-thebom-square-blue.png`,
           link: {
             mobileWebUrl: shareUrl,
             webUrl: shareUrl,
