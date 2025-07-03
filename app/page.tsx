@@ -623,7 +623,7 @@ export default function InheritanceTaxCalculator() {
                       </div>
                       <div>
                         <Label htmlFor="stocks" className="text-sm font-medium">
-                          기타 금융자산 <span className="text-xs text-gray-500">(단위 : 만원)</span>
+                          주식 및 기타 금융자산 <span className="text-xs text-gray-500">(단위 : 만원)</span>
                         </Label>
                         <Input
                           id="stocks"
