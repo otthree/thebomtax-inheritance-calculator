@@ -78,9 +78,17 @@ export default function RootLayout({
           crossOrigin="anonymous"
           strategy="afterInteractive"
           onLoad={() => {
-            if (typeof window !== "undefined" && window.Kakao) {
-              if (!window.Kakao.isInitialized()) {
-                window.Kakao.init(process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "YOUR_KAKAO_APP_KEY")
+            if (typeof window !== "undefined" && window.Kakao && !window.Kakao.isInitialized()) {
+              try {
+                const kakaoKey = process.env.NEXT_PUBLIC_KAKAO_APP_KEY
+                if (kakaoKey && kakaoKey !== "YOUR_KAKAO_APP_KEY") {
+                  window.Kakao.init(kakaoKey)
+                  console.log("Kakao SDK initialized successfully")
+                } else {
+                  console.error("Kakao App Key is not set properly")
+                }
+              } catch (error) {
+                console.error("Failed to initialize Kakao SDK:", error)
               }
             }
           }}

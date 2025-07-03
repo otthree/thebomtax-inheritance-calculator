@@ -209,50 +209,74 @@ export default function ResultPage() {
   const handleKakaoShare = () => {
     if (!calculationData) return
 
-    if (typeof window !== "undefined" && window.Kakao) {
-      const finalTaxAmount = convertWonToKoreanAmount(calculationData.calculationResult.finalTax * 10000)
-      const shareUrl = generateShareUrl()
+    // Kakao SDK 초기화 확인
+    if (typeof window === "undefined" || !window.Kakao) {
+      alert("카카오톡 공유 기능을 사용할 수 없습니다. 링크를 복사합니다.")
+      handleCopyLink()
+      return
+    }
 
-      try {
-        window.Kakao.Share.sendDefault({
-          objectType: "feed",
-          content: {
-            title: "상속세 계산 결과",
-            description: `예상되는 최종상속세는 ${finalTaxAmount}입니다.\n\n지금 바로 상속세 계산하기`,
-            imageUrl: `${window.location.origin}/logo-thebom-square-blue.png`,
+    if (!window.Kakao.isInitialized()) {
+      alert("카카오톡 SDK가 초기화되지 않았습니다. 링크를 복사합니다.")
+      handleCopyLink()
+      return
+    }
+
+    const finalTaxAmount = convertWonToKoreanAmount(calculationData.calculationResult.finalTax * 10000)
+    const shareUrl = generateShareUrl()
+
+    try {
+      window.Kakao.Share.sendDefault({
+        objectType: "feed",
+        content: {
+          title: "상속세 계산 결과 | 세무법인 더봄",
+          description: `예상되는 최종상속세는 ${finalTaxAmount}입니다.\n\n정확한 상속세 계산과 전문가 상담을 받아보세요.`,
+          // 이미지 URL을 제거하거나 공개적으로 접근 가능한 URL로 변경
+          imageUrl: "https://mud-kae.com/wp-content/uploads/2023/12/logo-thebom-square-blue.png",
+          link: {
+            mobileWebUrl: shareUrl,
+            webUrl: shareUrl,
+          },
+        },
+        buttons: [
+          {
+            title: "계산 결과 보기",
             link: {
               mobileWebUrl: shareUrl,
               webUrl: shareUrl,
             },
           },
-          social: {
-            likeCount: 0,
-            commentCount: 0,
+          {
+            title: "나도 계산하기",
+            link: {
+              mobileWebUrl: window.location.origin,
+              webUrl: window.location.origin,
+            },
           },
-          buttons: [
-            {
-              title: "계산 결과 보기",
-              link: {
-                mobileWebUrl: shareUrl,
-                webUrl: shareUrl,
-              },
-            },
-            {
-              title: "나도 계산하기",
-              link: {
-                mobileWebUrl: window.location.origin,
-                webUrl: window.location.origin,
-              },
-            },
-          ],
-        })
-      } catch (error) {
-        console.error("카카오톡 공유 실패:", error)
-        alert("카카오톡 공유에 실패했습니다. 링크를 복사합니다.")
-        handleCopyLink()
+        ],
+      })
+    } catch (error) {
+      console.error("카카오톡 공유 실패:", error)
+
+      // 에러 코드별 상세 메시지
+      let errorMessage = "카카오톡 공유에 실패했습니다."
+      if (error && error.code) {
+        switch (error.code) {
+          case -777:
+            errorMessage = "카카오톡이 설치되지 않았습니다."
+            break
+          case -301:
+            errorMessage = "사용자가 공유를 취소했습니다."
+            break
+          case 5001:
+            errorMessage = "도메인이 등록되지 않았거나 이미지 접근에 문제가 있습니다."
+            break
+          default:
+            errorMessage = `카카오톡 공유 오류 (코드: ${error.code})`
+        }
       }
-    } else {
-      alert("카카오톡 공유 기능을 사용할 수 없습니다. 링크를 복사합니다.")
+
+      alert(`${errorMessage} 링크를 복사합니다.`)
       handleCopyLink()
     }
   }
