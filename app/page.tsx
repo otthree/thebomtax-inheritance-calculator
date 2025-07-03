@@ -289,7 +289,8 @@ export default function InheritanceTaxCalculator() {
     const calculatedDeduction = (1.5 * c) / (1.5 + a)
     const spouseDeduction = Math.max(500000000, Math.min(3000000000, calculatedDeduction))
 
-    return spouseDeduction
+    // 만원 단위로 반올림
+    return Math.round(spouseDeduction / 10000) * 10000
   }
 
   const calculateTax = (data: typeof formData) => {
