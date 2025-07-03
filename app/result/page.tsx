@@ -296,7 +296,7 @@ export default function ResultPage() {
                 className="bg-slate-800 hover:bg-slate-900 text-white px-6 py-3 text-base font-medium rounded-md"
                 onClick={() => setIsConsultationModalOpen(true)}
               >
-                전문가 상담
+                상담신청
               </Button>
             </div>
             <div className="md:hidden">
@@ -400,7 +400,7 @@ export default function ResultPage() {
             className="bg-slate-700 hover:bg-slate-800 text-white px-6 py-2"
             onClick={() => setIsConsultationModalOpen(true)}
           >
-            💬 전문가상담
+            상담신청 하기
           </Button>
 
           <div className="relative">
