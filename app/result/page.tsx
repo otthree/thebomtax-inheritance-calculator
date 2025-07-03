@@ -65,6 +65,7 @@ interface CalculationResult {
   reportTaxCredit?: number
   totalTaxCredit?: number
   giftAssetsTotal?: number
+  spouseDeductionAmount?: number
 }
 
 interface CalculationData {
@@ -224,6 +225,7 @@ export default function ResultPage() {
         giftTaxCredit: calculationData.calculationResult.giftTaxCredit || 0,
         reportTaxCredit: calculationData.calculationResult.reportTaxCredit || 0,
         totalTaxCredit: calculationData.calculationResult.totalTaxCredit || 0,
+        spouseDeductionAmount: calculationData.calculationResult.spouseDeductionAmount || 0,
       }
     : undefined
 

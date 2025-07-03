@@ -73,6 +73,11 @@ export default function InheritanceTaxCalculator() {
     basicDeduction: true,
     spouseDeduction: false,
     housingDeduction: false,
+
+    // 배우자 공제 관련 추가 필드
+    childrenCount: "",
+    parentsCount: "",
+    spouseExpectedInheritance: "",
   })
 
   const [calculationResult, setCalculationResult] = useState({
@@ -94,6 +99,7 @@ export default function InheritanceTaxCalculator() {
     netAssets: 0,
     totalDeductions: 0,
     financialDeduction: 0,
+    spouseDeductionAmount: 0, // 실제 배우자 공제액
     taxableAmount: 0,
     taxRate: 0,
     progressiveDeduction: 0,
@@ -183,6 +189,13 @@ export default function InheritanceTaxCalculator() {
     calculateTax(newFormData)
   }
 
+  const handleNumberInputChange = (field: string, value: string) => {
+    const numericValue = value.replace(/[^0-9]/g, "")
+    const newFormData = { ...formData, [field]: numericValue }
+    setFormData(newFormData)
+    calculateTax(newFormData)
+  }
+
   // 증여 항목 추가
   const addGiftItem = () => {
     const newGift = {
@@ -261,6 +274,24 @@ export default function InheritanceTaxCalculator() {
     return Math.max(0, (taxableAmount * taxRate) / 100 - progressiveDeduction)
   }
 
+  // 배우자 공제액 계산 함수
+  const calculateSpouseDeduction = (childrenCount: number, parentsCount: number, spouseExpectedInheritance: number) => {
+    let a = childrenCount
+    const b = parentsCount
+    const c = spouseExpectedInheritance
+
+    // if a = 0, b = a (자녀수가 0이면 부모수를 자녀수로 설정)
+    if (a === 0) {
+      a = b
+    }
+
+    // 배우자공제액 = max(5억, min(30억, 1.5*c/(1.5+a)))
+    const calculatedDeduction = (1.5 * c) / (1.5 + a)
+    const spouseDeduction = Math.max(500000000, Math.min(3000000000, calculatedDeduction))
+
+    return spouseDeduction
+  }
+
   const calculateTax = (data: typeof formData) => {
     const convertToWon = (value: string) => {
       const numericValue = value?.replace(/,/g, "") || "0"
@@ -306,7 +337,15 @@ export default function InheritanceTaxCalculator() {
     let housingDeductionAmount = 0
 
     if (data.basicDeduction) basicDeductionAmount = 500000000
-    if (data.spouseDeduction) spouseDeductionAmount = 500000000
+
+    if (data.spouseDeduction) {
+      const childrenCount = Number.parseInt(data.childrenCount) || 0
+      const parentsCount = Number.parseInt(data.parentsCount) || 0
+      const spouseExpectedInheritance = convertToWon(data.spouseExpectedInheritance)
+
+      spouseDeductionAmount = calculateSpouseDeduction(childrenCount, parentsCount, spouseExpectedInheritance)
+    }
+
     if (data.housingDeduction) housingDeductionAmount = 600000000
 
     const netFinancialAssets = Math.max(0, financialAssetsTotal - financialDebtTotal)
@@ -362,6 +401,7 @@ export default function InheritanceTaxCalculator() {
       netAssets,
       totalDeductions,
       financialDeduction,
+      spouseDeductionAmount,
       taxableAmount,
       taxRate,
       progressiveDeduction,
@@ -907,24 +947,83 @@ export default function InheritanceTaxCalculator() {
                       </div>
                     </div>
 
-                    <div className="flex items-start space-x-3">
-                      <input
-                        type="checkbox"
-                        id="spouseDeduction"
-                        checked={formData.spouseDeduction}
-                        onChange={(e) => {
-                          const newFormData = { ...formData, spouseDeduction: e.target.checked }
-                          setFormData(newFormData)
-                          calculateTax(newFormData)
-                        }}
-                        className="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-                      />
-                      <div>
-                        <label htmlFor="spouseDeduction" className="text-base font-medium text-gray-900">
-                          배우자 공제
-                        </label>
-                        <p className="text-sm text-gray-600">배우자 있을 경우 최소 5억원 보장</p>
+                    <div className="space-y-4">
+                      <div className="flex items-start space-x-3">
+                        <input
+                          type="checkbox"
+                          id="spouseDeduction"
+                          checked={formData.spouseDeduction}
+                          onChange={(e) => {
+                            const newFormData = { ...formData, spouseDeduction: e.target.checked }
+                            setFormData(newFormData)
+                            calculateTax(newFormData)
+                          }}
+                          className="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                        />
+                        <div className="flex-1">
+                          <label htmlFor="spouseDeduction" className="text-base font-medium text-gray-900">
+                            배우자 공제
+                          </label>
+                          <p className="text-sm text-gray-600">배우자가 있을 경우 적용</p>
+                          {calculationResult.spouseDeductionAmount > 0 && (
+                            <p className="text-sm text-blue-600 font-medium">
+                              공제액: {convertWonToKoreanAmount(calculationResult.spouseDeductionAmount)}
+                            </p>
+                          )}
+                        </div>
                       </div>
+
+                      {formData.spouseDeduction && (
+                        <div className="ml-8 space-y-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                              <Label htmlFor="childrenCount" className="text-sm font-medium">
+                                자녀 수
+                              </Label>
+                              <Input
+                                id="childrenCount"
+                                placeholder="예: 2"
+                                value={formData.childrenCount}
+                                onChange={(e) => handleNumberInputChange("childrenCount", e.target.value)}
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="parentsCount" className="text-sm font-medium">
+                                부모 수
+                              </Label>
+                              <Input
+                                id="parentsCount"
+                                placeholder="예: 2"
+                                value={formData.parentsCount}
+                                onChange={(e) => handleNumberInputChange("parentsCount", e.target.value)}
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="spouseExpectedInheritance" className="text-sm font-medium">
+                                배우자 예상 상속재산 <span className="text-xs text-gray-500">(단위: 만원)</span>
+                              </Label>
+                              <Input
+                                id="spouseExpectedInheritance"
+                                placeholder="예: 100,000"
+                                value={formData.spouseExpectedInheritance}
+                                onChange={(e) => handleInputChange("spouseExpectedInheritance", e.target.value)}
+                              />
+                              {formData.spouseExpectedInheritance && (
+                                <p className="text-xs text-gray-400 mt-1">
+                                  {convertToKoreanAmount(formData.spouseExpectedInheritance)}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <Alert className="bg-blue-100 border-blue-300">
+                            <AlertTriangle className="h-4 w-4 text-blue-600" />
+                            <AlertDescription className="text-blue-800 text-xs">
+                              💡 자녀수가 0인 경우 부모수를 자녀수로 계산합니다. 배우자 공제액은 최소 5억원, 최대
+                              30억원입니다.
+                            </AlertDescription>
+                          </Alert>
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex items-start space-x-3">
@@ -1153,7 +1252,11 @@ export default function InheritanceTaxCalculator() {
                           </div>
                           <div className="flex justify-between">
                             <span className="text-slate-600">배우자공제:</span>
-                            <span className="text-slate-900">{formData.spouseDeduction ? "5억(원)" : "0(원)"}</span>
+                            <span className="text-slate-900">
+                              {formData.spouseDeduction
+                                ? convertWonToKoreanAmount(calculationResult.spouseDeductionAmount)
+                                : "0(원)"}
+                            </span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-slate-600">동거주택 상속공제:</span>
@@ -1263,7 +1366,7 @@ export default function InheritanceTaxCalculator() {
                         </div>
                         <div className="mt-3 pt-3 border-t border-slate-200 space-y-1 text-xs text-slate-500">
                           <div>✓ 일괄공제: 5억원</div>
-                          <div>✓ 배우자공제: 최소 5억원</div>
+                          <div>✓ 배우자공제: 최소 5억원 ~ 최대 30억원</div>
                           <div>✓ 동거주택 상속공제: 최대 6억원</div>
                           <div>✓ 금융자산 상속공제: 순금융자산의 20% (최대 2억원)</div>
                         </div>
@@ -1277,7 +1380,6 @@ export default function InheritanceTaxCalculator() {
                         <div className="text-2xl font-bold mb-1">
                           {convertWonToKoreanAmount(calculationResult.finalTax)}
                         </div>
-                        
                       </div>
                     </div>
                   )}
