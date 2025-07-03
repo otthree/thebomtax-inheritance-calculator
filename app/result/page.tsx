@@ -137,7 +137,7 @@ export default function ResultPage() {
     }
 
     const koreanAmount = result.join(" ")
-    return `${amount < 0 ? "-" : ""}${koreanAmount}(원)`
+    return `${amount < 0 ? "-" : ""}${koreanAmount}원`
   }
 
   const formatNumber = (num: number) => {
