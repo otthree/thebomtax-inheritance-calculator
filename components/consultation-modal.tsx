@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Checkbox } from "@/components/ui/checkbox"
-import { AlertCircle, Loader2 } from "lucide-react"
+import { AlertCircle, Loader2, CheckCircle, WifiOff } from "lucide-react"
 
 interface ConsultationModalProps {
   isOpen: boolean
@@ -33,6 +33,11 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
+    // 입력 시 에러 상태 초기화
+    if (submitStatus === "error") {
+      setSubmitStatus("idle")
+      setErrorMessage("")
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -44,14 +49,27 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
       return
     }
 
+    // 전화번호 형식 간단 검증
+    const phoneRegex = /^[0-9-+\s()]+$/
+    if (!phoneRegex.test(formData.phone)) {
+      setSubmitStatus("error")
+      setErrorMessage("올바른 전화번호 형식을 입력해주세요.")
+      return
+    }
+
     setIsSubmitting(true)
     setSubmitStatus("idle")
     setErrorMessage("")
 
     try {
+      console.log("상담 신청 시작:", { name: formData.name, phone: formData.phone })
+
       const response = await fetch("/api/consultation", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
         body: JSON.stringify({
           ...formData,
           calculationData,
@@ -59,50 +77,74 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
         }),
       })
 
-      // Always attempt to read the body as text first.
-      const raw = await response.text()
-      console.log("Server response:", raw)
+      console.log("API 응답 상태:", response.status)
 
-      // If JSON parse succeeds, use it; otherwise fabricate a minimal object.
-      let parsed: any
+      // 응답 본문 읽기
+      let responseData: any = {}
+      const responseText = await response.text()
+      console.log("API 응답 본문:", responseText)
+
+      // JSON 파싱 시도
       try {
-        parsed = raw ? JSON.parse(raw) : {}
+        responseData = responseText ? JSON.parse(responseText) : {}
       } catch (parseError) {
-        console.log("JSON parse failed:", parseError)
-        parsed = {}
+        console.error("JSON 파싱 실패:", parseError)
+        responseData = { success: false, message: "서버 응답 형식 오류" }
       }
 
-      // Normalise the success flag.
-      const ok = (response.ok && (parsed.success === undefined ? true : parsed.success)) || parsed.success === true
+      // 성공 처리
+      if (response.ok && responseData.success !== false) {
+        console.log("상담 신청 성공")
+        setSubmitStatus("success")
 
-      if (ok) {
-        // 성공 시 consultation-success 페이지로 이동
-        onClose()
-        router.push("/consultation-success")
-      } else {
-        // 더 구체적인 오류 메시지 제공
-        let errorMsg = "상담 신청에 실패했습니다."
-
-        if (response.status >= 500) {
-          errorMsg = "서버에 일시적인 문제가 발생했습니다. 잠시 후 다시 시도해주세요."
-        } else if (response.status >= 400) {
-          errorMsg = parsed.message || "입력하신 정보를 확인해주세요."
-        }
-
-        throw new Error(errorMsg)
+        // 1초 후 성공 페이지로 이동
+        setTimeout(() => {
+          onClose()
+          router.push("/consultation-success")
+        }, 1000)
+        return
       }
+
+      // 실패 처리
+      console.error("상담 신청 실패:", responseData)
+      setSubmitStatus("error")
+
+      // 구체적인 오류 메시지 설정
+      let errorMsg = responseData.message || "상담 신청에 실패했습니다."
+
+      // 상태 코드별 메시지 커스터마이징
+      if (response.status === 400) {
+        errorMsg = responseData.message || "입력하신 정보를 확인해주세요."
+      } else if (response.status === 408) {
+        errorMsg = "요청 시간이 초과되었습니다. 다시 시도해주세요."
+      } else if (response.status === 503) {
+        errorMsg = "네트워크 연결에 문제가 있습니다. 인터넷 연결을 확인해주세요."
+      } else if (response.status >= 500) {
+        errorMsg = "서버에 일시적인 문제가 발생했습니다. 잠시 후 다시 시도해주세요."
+      }
+
+      setErrorMessage(errorMsg)
     } catch (err) {
-      console.error("Consultation submission error:", err)
+      console.error("상담 신청 네트워크 오류:", err)
       setSubmitStatus("error")
 
       if (err instanceof TypeError && err.message.includes("fetch")) {
-        setErrorMessage("네트워크 연결을 확인해주세요.")
+        setErrorMessage("네트워크 연결을 확인해주세요. 인터넷 연결이 불안정할 수 있습니다.")
+      } else if (err instanceof Error && err.name === "AbortError") {
+        setErrorMessage("요청 시간이 초과되었습니다. 다시 시도해주세요.")
       } else {
-        setErrorMessage(err instanceof Error ? err.message : "알 수 없는 오류가 발생했습니다.")
+        setErrorMessage("알 수 없는 오류가 발생했습니다. 잠시 후 다시 시도해주세요.")
       }
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  const getErrorIcon = () => {
+    if (errorMessage.includes("네트워크") || errorMessage.includes("인터넷")) {
+      return <WifiOff className="h-4 w-4 text-red-600" />
+    }
+    return <AlertCircle className="h-4 w-4 text-red-600" />
   }
 
   return (
@@ -123,6 +165,7 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
                   onChange={(e) => handleInputChange("name", e.target.value)}
                   required
                   placeholder="홍길동"
+                  disabled={isSubmitting}
                 />
               </div>
               <div>
@@ -133,6 +176,7 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
                   onChange={(e) => handleInputChange("phone", e.target.value)}
                   required
                   placeholder="010-1234-5678"
+                  disabled={isSubmitting}
                 />
               </div>
             </div>
@@ -145,6 +189,7 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
                 onChange={(e) => handleInputChange("message", e.target.value)}
                 placeholder="상담받고 싶은 내용을 자세히 적어주세요."
                 rows={4}
+                disabled={isSubmitting}
               />
             </div>
 
@@ -153,6 +198,7 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
                 id="privacy-agreement"
                 checked={privacyAgreed}
                 onCheckedChange={(checked) => setPrivacyAgreed(checked as boolean)}
+                disabled={isSubmitting}
               />
               <div className="grid gap-1.5 leading-none">
                 <Label
@@ -165,10 +211,27 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
               </div>
             </div>
 
+            {submitStatus === "success" && (
+              <Alert className="bg-green-50 border-green-200">
+                <CheckCircle className="h-4 w-4 text-green-600" />
+                <AlertDescription className="text-green-800">
+                  상담 신청이 완료되었습니다! 곧 성공 페이지로 이동합니다.
+                </AlertDescription>
+              </Alert>
+            )}
+
             {submitStatus === "error" && (
               <Alert className="bg-red-50 border-red-200">
-                <AlertCircle className="h-4 w-4 text-red-600" />
-                <AlertDescription className="text-red-800">{errorMessage}</AlertDescription>
+                {getErrorIcon()}
+                <AlertDescription className="text-red-800">
+                  {errorMessage}
+                  {errorMessage.includes("네트워크") && (
+                    <div className="mt-2 text-sm">
+                      • Wi-Fi 또는 모바일 데이터 연결을 확인해주세요
+                      <br />• 잠시 후 다시 시도해주세요
+                    </div>
+                  )}
+                </AlertDescription>
               </Alert>
             )}
 
@@ -185,12 +248,17 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
               <Button
                 type="submit"
                 className="flex-1 bg-slate-700 hover:bg-slate-800"
-                disabled={isSubmitting || !privacyAgreed}
+                disabled={isSubmitting || !privacyAgreed || submitStatus === "success"}
               >
                 {isSubmitting ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                     신청 중...
+                  </>
+                ) : submitStatus === "success" ? (
+                  <>
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    완료
                   </>
                 ) : (
                   "상담 신청"
