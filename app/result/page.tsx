@@ -231,17 +231,17 @@ export default function ResultPage() {
           },
           buttons: [
             {
-              title: "상속세 계산하기",
-              link: {
-                mobileWebUrl: window.location.origin,
-                webUrl: window.location.origin,
-              },
-            },
-            {
               title: "계산 결과 보기",
               link: {
                 mobileWebUrl: shareUrl,
                 webUrl: shareUrl,
+              },
+            },
+            {
+              title: "나도 계산하기",
+              link: {
+                mobileWebUrl: window.location.origin,
+                webUrl: window.location.origin,
               },
             },
           ],
