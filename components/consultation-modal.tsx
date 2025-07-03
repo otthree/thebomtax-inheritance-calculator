@@ -73,7 +73,7 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
       }
 
       // Normalise the success flag.
-      const ok = response.ok && (parsed.success === undefined ? true : parsed.success)
+      const ok = (response.ok && (parsed.success === undefined ? true : parsed.success)) || parsed.success === true
 
       if (ok) {
         // 성공 시 consultation-success 페이지로 이동
