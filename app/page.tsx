@@ -641,7 +641,7 @@ export default function InheritanceTaxCalculator() {
 
                   <div>
                     <h3 className="text-base font-semibold mb-4 text-slate-900">금융자산</h3>
-                    <p className="text-sm text-gray-600 mb-4">예금, 주식, 펀드 등 금융자산을 입력해주세요</p>
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
                         <Label htmlFor="deposit" className="text-sm font-medium">
