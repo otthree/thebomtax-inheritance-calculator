@@ -204,7 +204,7 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
             <p>
               • 수집항목: 이름, 연락처, 상담내용
               <br />• 수집목적: 상속세 관련 전문 상담 제공
-              <br />• 보유기간: 상담 완료 후 1년 (관련 법령에 따라 연장 가능)
+              <br />• 보유기간: 상담 완료 후 3년
               <br />• 귀하는 개인정보 수집·이용에 대한 동의를 거부할 권리가 있으나, 동의를 거부할 경우 상담 서비스
               이용이 제한될 수 있습니다.
             </p>
