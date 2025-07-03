@@ -34,23 +34,34 @@ export default function RootLayout({
           src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js"
           integrity="sha384-TiCUE00h649CAMonG018J2ujOgDKW/kVWlChEuu4jK2vxfAAD0eZxzCKakxg55G4"
           crossOrigin="anonymous"
-          strategy="afterInteractive"
+          strategy="beforeInteractive"
         />
-        <Script id="kakao-init" strategy="afterInteractive">
-          {`
-            if (typeof window !== 'undefined' && window.Kakao) {
-              if (!window.Kakao.isInitialized()) {
-                window.Kakao.init('${process.env.NEXT_PUBLIC_KAKAO_APP_KEY}');
-              }
-            }
-          `}
-        </Script>
       </head>
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
           {children}
           <Toaster />
         </ThemeProvider>
+        <Script id="kakao-init" strategy="afterInteractive">
+          {`
+            function initKakao() {
+              if (typeof window !== 'undefined' && window.Kakao) {
+                if (!window.Kakao.isInitialized()) {
+                  try {
+                    window.Kakao.init('${process.env.NEXT_PUBLIC_KAKAO_APP_KEY}');
+                    console.log('Kakao SDK 초기화 성공');
+                  } catch (error) {
+                    console.error('Kakao SDK 초기화 실패:', error);
+                  }
+                }
+              } else {
+                console.log('Kakao SDK 로딩 대기 중...');
+                setTimeout(initKakao, 100);
+              }
+            }
+            initKakao();
+          `}
+        </Script>
       </body>
     </html>
   )

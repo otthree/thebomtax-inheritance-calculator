@@ -90,9 +90,23 @@ export default function ResultPage() {
   const [shareButtonText, setShareButtonText] = useState("📤 공유")
   const [isSharing, setIsSharing] = useState(false)
   const [showShareOptions, setShowShareOptions] = useState(false)
+  const [kakaoReady, setKakaoReady] = useState(false)
 
   // URL 파라미터에서 data 값 가져오기
   const dataParam = searchParams.get("data")
+
+  // Kakao SDK 준비 상태 확인
+  useEffect(() => {
+    const checkKakaoReady = () => {
+      if (typeof window !== "undefined" && window.Kakao && window.Kakao.isInitialized()) {
+        setKakaoReady(true)
+        console.log("Kakao SDK 준비 완료")
+      } else {
+        setTimeout(checkKakaoReady, 100)
+      }
+    }
+    checkKakaoReady()
+  }, [])
 
   useEffect(() => {
     const loadCalculationData = () => {
@@ -215,16 +229,9 @@ export default function ResultPage() {
   const handleKakaoShare = () => {
     if (!calculationData) return
 
-    // Kakao SDK 초기화 확인
-    if (typeof window === "undefined" || !window.Kakao) {
-      alert("카카오톡 공유 기능을 사용할 수 없습니다. 링크를 복사합니다.")
-      handleCopyLink()
-      return
-    }
-
-    if (!window.Kakao.isInitialized()) {
-      alert("카카오톡 SDK가 초기화되지 않았습니다. 링크를 복사합니다.")
-      handleCopyLink()
+    // Kakao SDK 준비 상태 확인
+    if (!kakaoReady) {
+      alert("카카오톡 SDK가 아직 준비되지 않았습니다. 잠시 후 다시 시도해주세요.")
       return
     }
 
@@ -513,9 +520,10 @@ export default function ResultPage() {
                     variant="ghost"
                     className="w-full justify-start text-left hover:bg-gray-50"
                     onClick={handleKakaoShare}
+                    disabled={!kakaoReady}
                   >
                     <MessageCircle className="w-4 h-4 mr-2" />
-                    카카오톡 공유
+                    카카오톡 공유 {!kakaoReady && "(준비중)"}
                   </Button>
                   <Button
                     variant="ghost"
@@ -536,6 +544,7 @@ export default function ResultPage() {
                 </div>
                 <div className="px-3 py-2 border-t border-gray-100">
                   <p className="text-xs text-gray-500">현재 도메인: {window.location.hostname}</p>
+                  <p className="text-xs text-gray-500">Kakao SDK: {kakaoReady ? "준비완료" : "로딩중"}</p>
                 </div>
               </div>
             )}

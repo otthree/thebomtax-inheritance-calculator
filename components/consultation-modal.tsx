@@ -3,72 +3,83 @@
 import type React from "react"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Checkbox } from "@/components/ui/checkbox"
-import { AlertCircle, Loader2, CheckCircle, WifiOff } from "lucide-react"
+import { Loader2, CheckCircle, AlertCircle, Phone, MessageCircle } from "lucide-react"
+
+interface CalculationData {
+  totalAssets: number
+  totalDebt: number
+  netAssets: number
+  taxableAmount: number
+  taxRate: number
+  progressiveDeduction: number
+  finalTax: number
+  basicDeduction: boolean
+  spouseDeduction: boolean
+  housingDeduction: boolean
+  realEstateTotal: number
+  financialAssetsTotal: number
+  giftAssetsTotal?: number
+  otherAssetsTotal: number
+  financialDebtTotal: number
+  funeralExpenseTotal: number
+  taxArrearsTotal: number
+  otherDebtTotal: number
+  totalDeductions: number
+  financialDeduction: number
+  calculatedTax?: number
+  giftTaxCredit?: number
+  reportTaxCredit?: number
+  totalTaxCredit?: number
+  spouseDeductionAmount?: number
+}
 
 interface ConsultationModalProps {
   isOpen: boolean
   onClose: () => void
-  calculationData: any
+  calculationData?: CalculationData
 }
 
 export default function ConsultationModal({ isOpen, onClose, calculationData }: ConsultationModalProps) {
-  const router = useRouter()
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
+    email: "",
     message: "",
   })
-  const [privacyAgreed, setPrivacyAgreed] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle")
   const [errorMessage, setErrorMessage] = useState("")
 
-  const handleInputChange = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
-    // 입력 시 에러 상태 초기화
-    if (submitStatus === "error") {
-      setSubmitStatus("idle")
-      setErrorMessage("")
-    }
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
-    if (!privacyAgreed) {
-      setSubmitStatus("error")
-      setErrorMessage("개인정보 수집 및 이용에 동의해주세요.")
-      return
-    }
-
-    // 전화번호 형식 간단 검증
-    const phoneRegex = /^[0-9-+\s()]+$/
-    if (!phoneRegex.test(formData.phone)) {
-      setSubmitStatus("error")
-      setErrorMessage("올바른 전화번호 형식을 입력해주세요.")
-      return
-    }
-
     setIsSubmitting(true)
     setSubmitStatus("idle")
     setErrorMessage("")
 
     try {
-      console.log("상담 신청 시작:", { name: formData.name, phone: formData.phone })
+      console.log("상담 신청 데이터 전송 시작:", {
+        formData,
+        calculationData: calculationData ? "있음" : "없음",
+      })
 
       const response = await fetch("/api/consultation", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Accept: "application/json",
         },
         body: JSON.stringify({
           ...formData,
@@ -77,223 +88,181 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
         }),
       })
 
-      console.log("API 응답 상태:", response.status)
+      console.log("API 응답 상태:", response.status, response.statusText)
+      console.log("응답 헤더:", Object.fromEntries(response.headers.entries()))
 
-      // ---------- 응답 본문 및 타입 확인 ----------
-      let responseData: any = {}
-      let responseText = ""
+      let responseData
+      const contentType = response.headers.get("content-type")
 
-      const isJson = response.headers.get("content-type")?.toLowerCase().includes("application/json")
-
-      try {
-        if (isJson) {
-          // JSON 응답인 경우
-          responseData = await response.json()
-          console.log("API JSON 응답:", responseData)
-        } else {
-          // JSON 이 아닌 경우 (예: 내부 서버 오류 HTML, 일반 텍스트 등)
-          responseText = await response.text()
-          console.warn("API 비-JSON 응답:", responseText.substring(0, 200))
-          responseData = {
-            success: false,
-            message: responseText || "서버 응답 형식 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
-          }
-        }
-      } catch (parseError) {
-        // JSON 파싱 실패 등 예외 처리
-        console.error("응답 처리 실패:", parseError)
-        responseData = {
-          success: false,
-          message: "서버 응답 처리 중 오류가 발생했습니다.",
-        }
+      if (contentType && contentType.includes("application/json")) {
+        responseData = await response.json()
+        console.log("JSON 응답 데이터:", responseData)
+      } else {
+        const textResponse = await response.text()
+        console.log("텍스트 응답:", textResponse)
+        responseData = { message: textResponse }
       }
 
-      // 성공 처리
-      if (response.ok && responseData.success !== false) {
+      if (response.ok) {
         console.log("상담 신청 성공")
         setSubmitStatus("success")
+        setFormData({ name: "", phone: "", email: "", message: "" })
 
-        // 1초 후 성공 페이지로 이동
+        // 3초 후 모달 닫기
         setTimeout(() => {
           onClose()
-          router.push("/consultation-success")
-        }, 1000)
-        return
-      }
-
-      // 실패 처리
-      console.error("상담 신청 실패:", responseData)
-      setSubmitStatus("error")
-
-      // 구체적인 오류 메시지 설정
-      let errorMsg = responseData.message || "상담 신청에 실패했습니다."
-
-      // 상태 코드별 메시지 커스터마이징
-      if (response.status === 400) {
-        errorMsg = responseData.message || "입력하신 정보를 확인해주세요."
-      } else if (response.status === 408) {
-        errorMsg = "요청 시간이 초과되었습니다. 다시 시도해주세요."
-      } else if (response.status === 503) {
-        errorMsg = "네트워크 연결에 문제가 있습니다. 인터넷 연결을 확인해주세요."
-      } else if (response.status >= 500) {
-        errorMsg = "서버에 일시적인 문제가 발생했습니다. 잠시 후 다시 시도해주세요."
-      }
-
-      setErrorMessage(errorMsg)
-    } catch (err) {
-      console.error("상담 신청 네트워크 오류:", err)
-      setSubmitStatus("error")
-
-      if (err instanceof TypeError && err.message.includes("fetch")) {
-        setErrorMessage("네트워크 연결을 확인해주세요. 인터넷 연결이 불안정할 수 있습니다.")
-      } else if (err instanceof Error && err.name === "AbortError") {
-        setErrorMessage("요청 시간이 초과되었습니다. 다시 시도해주세요.")
+          setSubmitStatus("idle")
+        }, 3000)
       } else {
-        setErrorMessage("알 수 없는 오류가 발생했습니다. 잠시 후 다시 시도해주세요.")
+        console.error("상담 신청 실패:", response.status, responseData)
+        setSubmitStatus("error")
+        setErrorMessage(responseData.message || `서버 오류 (${response.status})`)
       }
+    } catch (error) {
+      console.error("상담 신청 중 오류 발생:", error)
+      setSubmitStatus("error")
+      setErrorMessage(error instanceof Error ? error.message : "알 수 없는 오류가 발생했습니다.")
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  const getErrorIcon = () => {
-    if (errorMessage.includes("네트워크") || errorMessage.includes("인터넷")) {
-      return <WifiOff className="h-4 w-4 text-red-600" />
-    }
-    return <AlertCircle className="h-4 w-4 text-red-600" />
+  const formatNumber = (num: number): string => {
+    if (num === 0) return "0만원"
+    const inTenThousands = Math.round(num / 10000)
+    return `${inTenThousands.toLocaleString()}만원`
   }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-xl font-semibold">전문가 상담 신청</DialogTitle>
+          <DialogTitle className="text-xl font-bold text-center">전문가 상담 신청</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="name">이름 *</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => handleInputChange("name", e.target.value)}
-                  required
-                  placeholder="홍길동"
-                  disabled={isSubmitting}
-                />
-              </div>
-              <div>
-                <Label htmlFor="phone">연락처 *</Label>
-                <Input
-                  id="phone"
-                  value={formData.phone}
-                  onChange={(e) => handleInputChange("phone", e.target.value)}
-                  required
-                  placeholder="010-1234-5678"
-                  disabled={isSubmitting}
-                />
+        {submitStatus === "success" ? (
+          <div className="text-center py-8">
+            <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">상담 신청이 완료되었습니다!</h3>
+            <p className="text-slate-600 mb-4">
+              빠른 시일 내에 전문 세무사가 연락드리겠습니다.
+              <br />
+              평일 오전 9시~오후 6시 내에 연락드립니다.
+            </p>
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <div className="flex items-center justify-center space-x-2 text-blue-700">
+                <Phone className="w-4 h-4" />
+                <span className="font-medium">긴급 상담: 02-336-0309</span>
               </div>
             </div>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {calculationData && (
+              <div className="bg-slate-50 p-4 rounded-lg mb-4">
+                <h4 className="font-medium mb-2">계산 결과 요약</h4>
+                <div className="text-sm space-y-1">
+                  <div className="flex justify-between">
+                    <span>상속재산 총액:</span>
+                    <span className="font-medium">{formatNumber(calculationData.totalAssets)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>예상 상속세:</span>
+                    <span className="font-medium text-blue-600">{formatNumber(calculationData.finalTax)}</span>
+                  </div>
+                </div>
+              </div>
+            )}
 
-            <div>
+            <div className="space-y-2">
+              <Label htmlFor="name">이름 *</Label>
+              <Input
+                id="name"
+                name="name"
+                value={formData.name}
+                onChange={handleInputChange}
+                required
+                placeholder="홍길동"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="phone">연락처 *</Label>
+              <Input
+                id="phone"
+                name="phone"
+                type="tel"
+                value={formData.phone}
+                onChange={handleInputChange}
+                required
+                placeholder="010-1234-5678"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="email">이메일</Label>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                value={formData.email}
+                onChange={handleInputChange}
+                placeholder="example@email.com"
+              />
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="message">상담 내용</Label>
               <Textarea
                 id="message"
+                name="message"
                 value={formData.message}
-                onChange={(e) => handleInputChange("message", e.target.value)}
-                placeholder="상담받고 싶은 내용을 자세히 적어주세요."
+                onChange={handleInputChange}
+                placeholder="상속세 관련 궁금한 점이나 상담받고 싶은 내용을 자유롭게 작성해주세요."
                 rows={4}
-                disabled={isSubmitting}
               />
             </div>
-
-            <div className="flex items-start space-x-2 pt-4">
-              <Checkbox
-                id="privacy-agreement"
-                checked={privacyAgreed}
-                onCheckedChange={(checked) => setPrivacyAgreed(checked as boolean)}
-                disabled={isSubmitting}
-              />
-              <div className="grid gap-1.5 leading-none">
-                <Label
-                  htmlFor="privacy-agreement"
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  개인정보 수집 및 이용에 동의합니다 *
-                </Label>
-                <p className="text-xs text-muted-foreground">수집된 개인정보는 상담 목적으로만 사용됩니다.</p>
-              </div>
-            </div>
-
-            {submitStatus === "success" && (
-              <Alert className="bg-green-50 border-green-200">
-                <CheckCircle className="h-4 w-4 text-green-600" />
-                <AlertDescription className="text-green-800">
-                  상담 신청이 완료되었습니다! 곧 성공 페이지로 이동합니다.
-                </AlertDescription>
-              </Alert>
-            )}
 
             {submitStatus === "error" && (
               <Alert className="bg-red-50 border-red-200">
-                {getErrorIcon()}
+                <AlertCircle className="h-4 w-4 text-red-600" />
                 <AlertDescription className="text-red-800">
+                  <strong>상담 신청 실패</strong>
+                  <br />
                   {errorMessage}
-                  {errorMessage.includes("네트워크") && (
-                    <div className="mt-2 text-sm">
-                      • Wi-Fi 또는 모바일 데이터 연결을 확인해주세요
-                      <br />• 잠시 후 다시 시도해주세요
-                    </div>
-                  )}
+                  <br />
+                  <br />
+                  문제가 지속되면 직접 연락주세요: 02-336-0309
                 </AlertDescription>
               </Alert>
             )}
 
-            <div className="flex gap-3 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onClose}
-                className="flex-1 bg-transparent"
-                disabled={isSubmitting}
-              >
+            <div className="flex space-x-3 pt-4">
+              <Button type="button" variant="outline" onClick={onClose} className="flex-1 bg-transparent">
                 취소
               </Button>
-              <Button
-                type="submit"
-                className="flex-1 bg-slate-700 hover:bg-slate-800"
-                disabled={isSubmitting || !privacyAgreed || submitStatus === "success"}
-              >
+              <Button type="submit" disabled={isSubmitting} className="flex-1 bg-blue-600 hover:bg-blue-700">
                 {isSubmitting ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    신청 중...
-                  </>
-                ) : submitStatus === "success" ? (
-                  <>
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    완료
+                    전송 중...
                   </>
                 ) : (
-                  "상담 신청"
+                  <>
+                    <MessageCircle className="w-4 h-4 mr-2" />
+                    상담 신청
+                  </>
                 )}
               </Button>
             </div>
-          </form>
 
-          <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded">
-            <p className="font-medium mb-1">개인정보 처리 안내</p>
-            <p>
-              • 수집항목: 이름, 연락처, 상담내용
-              <br />• 수집목적: 상속세 관련 전문 상담 제공
-              <br />• 보유기간: 상담 완료 후 3년
-              <br />• 귀하는 개인정보 수집·이용에 대한 동의를 거부할 권리가 있으나, 동의를 거부할 경우 상담 서비스
-              이용이 제한될 수 있습니다.
-            </p>
-          </div>
-        </div>
+            <div className="text-center pt-2">
+              <p className="text-xs text-slate-500">
+                개인정보는 상담 목적으로만 사용되며, 상담 완료 후 안전하게 폐기됩니다.
+              </p>
+            </div>
+          </form>
+        )}
       </DialogContent>
     </Dialog>
   )
