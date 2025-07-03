@@ -344,7 +344,7 @@ export default function InheritanceTaxCalculator() {
       return total + calculateGiftTaxCredit(amount, gift.relationship)
     }, 0)
 
-    const reportTaxCredit = calculatedTax * 0.03
+    const reportTaxCredit = (calculatedTax - giftTaxCredit) * 0.03
     const totalTaxCredit = giftTaxCredit + reportTaxCredit
     const finalTax = Math.max(0, calculatedTax - totalTaxCredit)
 
