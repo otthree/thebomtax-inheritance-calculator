@@ -11,6 +11,13 @@ import Link from "next/link"
 import ConsultationModal from "@/components/consultation-modal"
 import { Footer } from "@/components/footer"
 
+// Kakao SDK 타입 선언
+declare global {
+  interface Window {
+    Kakao: any
+  }
+}
+
 interface FormData {
   realEstate: string
   businessProperty: string
@@ -115,7 +122,7 @@ export default function ResultPage() {
 
   const convertWonToKoreanAmount = (amount: number): string => {
     amount = amount / 10000
-    if (amount === 0) return "0원"
+    if (amount === 0) return "0(원)"
 
     const units = ["", "만", "억", "조"]
     const result = []
@@ -130,24 +137,12 @@ export default function ResultPage() {
     }
 
     const koreanAmount = result.join(" ")
-    return `${amount < 0 ? "-" : ""}${koreanAmount}원`
+    return `${amount < 0 ? "-" : ""}${koreanAmount}(원)`
   }
 
   const formatNumber = (num: number) => {
     const rounded = Math.round(num / 10000)
     return convertWonToKoreanAmount(rounded * 10000)
-  }
-
-  const generateShareMessage = () => {
-    if (!calculationData) return ""
-
-    const finalTaxAmount = convertWonToKoreanAmount(calculationData.calculationResult.finalTax * 10000)
-
-    return `예상되는 최종상속세는 ${finalTaxAmount}입니다.
-
-지금 바로 상속세 계산하기 
-
-상속세더봄.com`
   }
 
   const handleFeeCheck = () => {
@@ -158,14 +153,72 @@ export default function ResultPage() {
     window.location.href = "/"
   }
 
-  const handleCopyMessage = async () => {
+  const generateShareUrl = () => {
+    if (!calculationData) return ""
+
+    const encodedData = encodeURIComponent(JSON.stringify(calculationData))
+    return `${window.location.origin}/result?data=${encodedData}`
+  }
+
+  const handleKakaoShare = () => {
+    if (!calculationData) return
+
+    if (typeof window !== "undefined" && window.Kakao) {
+      const finalTaxAmount = convertWonToKoreanAmount(calculationData.calculationResult.finalTax * 10000)
+      const shareUrl = generateShareUrl()
+
+      try {
+        window.Kakao.Share.sendDefault({
+          objectType: "feed",
+          content: {
+            title: "상속세 계산 결과",
+            description: `예상되는 최종상속세는 ${finalTaxAmount}입니다.\n\n지금 바로 상속세 계산하기`,
+            imageUrl: `${window.location.origin}/logo-deobom-blue.png`,
+            link: {
+              mobileWebUrl: shareUrl,
+              webUrl: shareUrl,
+            },
+          },
+          social: {
+            likeCount: 0,
+            commentCount: 0,
+          },
+          buttons: [
+            {
+              title: "상속세 계산하기",
+              link: {
+                mobileWebUrl: window.location.origin,
+                webUrl: window.location.origin,
+              },
+            },
+            {
+              title: "계산 결과 보기",
+              link: {
+                mobileWebUrl: shareUrl,
+                webUrl: shareUrl,
+              },
+            },
+          ],
+        })
+      } catch (error) {
+        console.error("카카오톡 공유 실패:", error)
+        alert("카카오톡 공유에 실패했습니다. 링크를 복사합니다.")
+        handleCopyLink()
+      }
+    } else {
+      alert("카카오톡 공유 기능을 사용할 수 없습니다. 링크를 복사합니다.")
+      handleCopyLink()
+    }
+  }
+
+  const handleCopyLink = async () => {
     if (!calculationData) return
 
     setIsSharing(true)
 
     try {
-      const shareMessage = generateShareMessage()
-      await navigator.clipboard.writeText(shareMessage)
+      const shareUrl = generateShareUrl()
+      await navigator.clipboard.writeText(shareUrl)
 
       setShareButtonText("✅ 복사완료!")
       setTimeout(() => {
@@ -173,7 +226,7 @@ export default function ResultPage() {
         setShowShareOptions(false)
       }, 2000)
     } catch (error) {
-      alert("메시지 복사에 실패했습니다.")
+      alert("링크 복사에 실패했습니다.")
     } finally {
       setIsSharing(false)
     }
@@ -186,21 +239,22 @@ export default function ResultPage() {
   const handleWebShare = async () => {
     if (!calculationData) return
 
-    const shareMessage = generateShareMessage()
+    const shareUrl = generateShareUrl()
+    const finalTaxAmount = convertWonToKoreanAmount(calculationData.calculationResult.finalTax * 10000)
     const shareData = {
       title: "상속세 계산 결과",
-      text: shareMessage,
+      text: `예상되는 최종상속세는 ${finalTaxAmount}입니다.\n\n지금 바로 상속세 계산하기\n상속세더봄.com`,
+      url: shareUrl,
     }
 
     try {
       if (navigator.share) {
         await navigator.share(shareData)
       } else {
-        await handleCopyMessage()
+        await handleCopyLink()
       }
     } catch (error) {
-      // 공유 실패 시 복사로 대체
-      await handleCopyMessage()
+      // 공유 실패 시 무시
     }
   }
 
@@ -430,22 +484,30 @@ export default function ResultPage() {
                   <Button
                     variant="ghost"
                     className="w-full justify-start text-left hover:bg-gray-50"
-                    onClick={handleCopyMessage}
+                    onClick={handleKakaoShare}
+                  >
+                    <MessageCircle className="w-4 h-4 mr-2" />
+                    카카오톡 공유
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start text-left hover:bg-gray-50"
+                    onClick={handleCopyLink}
                   >
                     <Copy className="w-4 h-4 mr-2" />
-                    메시지 복사
+                    링크 복사
                   </Button>
                   <Button
                     variant="ghost"
                     className="w-full justify-start text-left hover:bg-gray-50"
                     onClick={handleWebShare}
                   >
-                    <MessageCircle className="w-4 h-4 mr-2" />
-                    카톡/메시지 공유
+                    <Share2 className="w-4 h-4 mr-2" />
+                    공유하기
                   </Button>
                 </div>
                 <div className="px-3 py-2 border-t border-gray-100">
-                  <p className="text-xs text-gray-500">계산 결과를 간단한 메시지로 공유합니다</p>
+                  <p className="text-xs text-gray-500">카카오톡으로 결과를 공유하세요</p>
                 </div>
               </div>
             )}
