@@ -145,7 +145,9 @@ export default function ResultPage() {
 
     return `예상되는 최종상속세는 ${finalTaxAmount}입니다.
 
-지금 바로 상속세 계산하기 상속세더봄.com`
+지금 바로 상속세 계산하기 
+
+상속세더봄.com`
   }
 
   const handleFeeCheck = () => {
