@@ -943,7 +943,7 @@ export default function InheritanceTaxCalculator() {
                         <label htmlFor="housingDeduction" className="text-base font-medium text-gray-900">
                           동거주택 상속공제
                         </label>
-                        <p className="text-sm text-gray-600">6억원 (10년이상 함께 거주한 1주택자의 경우)</p>
+                        <p className="text-sm text-gray-600">최대 6억원 (10년이상 함께 거주한 1주택자의 경우)</p>
                       </div>
                     </div>
                   </div>
