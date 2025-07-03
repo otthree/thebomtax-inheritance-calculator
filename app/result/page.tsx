@@ -160,6 +160,52 @@ export default function ResultPage() {
     return `${window.location.origin}/result?data=${encodedData}`
   }
 
+  const handleCopyLink = async () => {
+    if (!calculationData) return
+
+    setIsSharing(true)
+
+    try {
+      const shareUrl = generateShareUrl()
+      await navigator.clipboard.writeText(shareUrl)
+
+      setShareButtonText("✅ 복사완료!")
+      setTimeout(() => {
+        setShareButtonText("📤 공유")
+        setShowShareOptions(false)
+      }, 2000)
+    } catch (error) {
+      alert("링크 복사에 실패했습니다.")
+    } finally {
+      setIsSharing(false)
+    }
+  }
+
+  const handleShare = () => {
+    setShowShareOptions(!showShareOptions)
+  }
+
+  const handleWebShare = async () => {
+    if (!calculationData) return
+
+    const shareUrl = generateShareUrl()
+    const shareData = {
+      title: "상속세 계산 결과",
+      text: `상속세 계산 결과: ${convertWonToKoreanAmount(calculationData.calculationResult.finalTax * 10000)}`,
+      url: shareUrl,
+    }
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData)
+      } else {
+        await handleCopyLink()
+      }
+    } catch (error) {
+      // 공유 실패 시 무시
+    }
+  }
+
   const handleKakaoShare = () => {
     if (!calculationData) return
 
@@ -208,53 +254,6 @@ export default function ResultPage() {
     } else {
       alert("카카오톡 공유 기능을 사용할 수 없습니다. 링크를 복사합니다.")
       handleCopyLink()
-    }
-  }
-
-  const handleCopyLink = async () => {
-    if (!calculationData) return
-
-    setIsSharing(true)
-
-    try {
-      const shareUrl = generateShareUrl()
-      await navigator.clipboard.writeText(shareUrl)
-
-      setShareButtonText("✅ 복사완료!")
-      setTimeout(() => {
-        setShareButtonText("📤 공유")
-        setShowShareOptions(false)
-      }, 2000)
-    } catch (error) {
-      alert("링크 복사에 실패했습니다.")
-    } finally {
-      setIsSharing(false)
-    }
-  }
-
-  const handleShare = () => {
-    setShowShareOptions(!showShareOptions)
-  }
-
-  const handleWebShare = async () => {
-    if (!calculationData) return
-
-    const shareUrl = generateShareUrl()
-    const finalTaxAmount = convertWonToKoreanAmount(calculationData.calculationResult.finalTax * 10000)
-    const shareData = {
-      title: "상속세 계산 결과",
-      text: `예상되는 최종상속세는 ${finalTaxAmount}입니다.\n\n지금 바로 상속세 계산하기\n상속세더봄.com`,
-      url: shareUrl,
-    }
-
-    try {
-      if (navigator.share) {
-        await navigator.share(shareData)
-      } else {
-        await handleCopyLink()
-      }
-    } catch (error) {
-      // 공유 실패 시 무시
     }
   }
 
@@ -507,7 +506,7 @@ export default function ResultPage() {
                   </Button>
                 </div>
                 <div className="px-3 py-2 border-t border-gray-100">
-                  <p className="text-xs text-gray-500">카카오톡으로 결과를 공유하세요</p>
+                  <p className="text-xs text-gray-500">현재 도메인: {window.location.hostname}</p>
                 </div>
               </div>
             )}

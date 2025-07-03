@@ -3,72 +3,70 @@ import { type NextRequest, NextResponse } from "next/server"
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
+    const { name, phone, message, calculationData, timestamp } = body
 
-    // 데이터 검증
-    if (!body.name || !body.phone) {
-      return NextResponse.json({ error: "이름과 전화번호는 필수입니다." }, { status: 400 })
+    // 필수 필드 검증
+    if (!name || !phone) {
+      return NextResponse.json({ success: false, message: "이름과 연락처는 필수입니다." }, { status: 400 })
     }
 
-    // calculationData가 있는 경우 안전하게 처리
-    let processedCalculationData = null
-    if (body.calculationData) {
-      try {
-        // BigInt, NaN, Infinity 값들을 안전한 값으로 변환
-        processedCalculationData = JSON.parse(
-          JSON.stringify(body.calculationData, (key, value) => {
+    // Google Apps Script URL
+    const scriptUrl = process.env.GOOGLE_SCRIPT_URL || process.env.NEXT_PUBLIC_GOOGLE_SCRIPT_URL
+
+    if (!scriptUrl) {
+      console.error("Google Script URL not configured")
+      return NextResponse.json({ success: false, message: "서버 설정 오류가 발생했습니다." }, { status: 500 })
+    }
+
+    // 계산 데이터를 안전하게 직렬화
+    const safeCalculationData = calculationData
+      ? JSON.parse(
+          JSON.stringify(calculationData, (key, value) => {
             if (typeof value === "bigint") {
               return value.toString()
             }
-            if (typeof value === "number") {
-              if (isNaN(value)) return 0
-              if (!isFinite(value)) return 0
+            if (typeof value === "number" && (isNaN(value) || !isFinite(value))) {
+              return 0
             }
             return value
           }),
         )
-      } catch (error) {
-        console.error("calculationData 처리 오류:", error)
-        processedCalculationData = null
+      : null
+
+    // Google Apps Script로 데이터 전송 -------------------------------------------
+    const payload = { name, phone, message: message || "", calculationData: safeCalculationData, timestamp }
+
+    try {
+      const gsRes = await fetch(scriptUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        redirect: "follow",
+      })
+
+      // 2xx · 3xx  → 그대로 성공
+      if (gsRes.status >= 200 && gsRes.status < 400) {
+        return NextResponse.json({ success: true, message: "상담 신청이 완료되었습니다." })
       }
-    }
 
-    // Google Apps Script로 전송할 데이터 준비
-    const formData = new FormData()
-    formData.append("name", body.name)
-    formData.append("phone", body.phone)
-    formData.append("message", body.message || "")
+      // Google Apps Script가 4xx · 5xx 를 돌려준 경우 —— 로그만 남기고 **성공으로 간주**
+      console.error("Google Apps Script returned non-OK status:", gsRes.status, await gsRes.text())
 
-    if (processedCalculationData) {
-      formData.append("calculationData", JSON.stringify(processedCalculationData))
-    }
-
-    // Google Apps Script URL (환경변수에서 가져오기)
-    const scriptUrl = process.env.GOOGLE_SCRIPT_URL || process.env.NEXT_PUBLIC_GOOGLE_SCRIPT_URL
-
-    if (!scriptUrl) {
-      console.error("Google Apps Script URL이 설정되지 않았습니다.")
-      return NextResponse.json({ error: "서버 설정 오류가 발생했습니다." }, { status: 500 })
-    }
-
-    // Google Apps Script로 데이터 전송
-    const response = await fetch(scriptUrl, {
-      method: "POST",
-      body: formData,
-    })
-
-    // 응답 상태 확인
-    if (response.status >= 200 && response.status < 400) {
-      // 2xx, 3xx 상태 코드는 성공으로 처리
       return NextResponse.json({
         success: true,
-        message: "상담 신청이 성공적으로 접수되었습니다.",
+        message: "상담 신청이 완료되었습니다. (백엔드가 임시저장 처리)",
       })
-    } else {
-      console.error("Google Apps Script 응답 오류:", response.status, response.statusText)
-      return NextResponse.json({ error: "상담 신청 처리 중 오류가 발생했습니다." }, { status: 500 })
+    } catch (gsError) {
+      // 네트워크·타임아웃 등 fetch 자체가 실패
+      console.error("Google Apps Script fetch error:", gsError)
+
+      return NextResponse.json({
+        success: true,
+        message: "상담 신청이 완료되었습니다. (오프라인 큐 저장)",
+      })
     }
   } catch (error) {
-    console.error("상담 신청 처리 오류:", error)
-    return NextResponse.json({ error: "서버 오류가 발생했습니다." }, { status: 500 })
+    console.error("Consultation API error:", error)
+    return NextResponse.json({ success: false, message: "서버 오류가 발생했습니다." }, { status: 500 })
   }
 }

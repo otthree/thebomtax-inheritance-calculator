@@ -10,20 +10,53 @@ const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
   title: "상속세 계산기 | 세무법인 더봄",
-  description: "2025년 기준 상속세 계산기 - 전문 세무사 검증, 무료 서비스",
-  keywords: "상속세, 계산기, 세무법인, 더봄, 상속세율, 공제",
+  description: "정확한 상속세 계산과 전문가 상담을 제공하는 세무법인 더봄의 상속세 계산기입니다.",
+  keywords: "상속세, 계산기, 세무법인, 더봄, 상속세계산, 세무상담",
   authors: [{ name: "세무법인 더봄" }],
+  creator: "세무법인 더봄",
+  publisher: "세무법인 더봄",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  metadataBase: new URL("https://thebomtax-inheritance-calculator.vercel.app"),
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
     title: "상속세 계산기 | 세무법인 더봄",
-    description: "2025년 기준 상속세 계산기 - 전문 세무사 검증, 무료 서비스",
-    type: "website",
+    description: "정확한 상속세 계산과 전문가 상담을 제공하는 세무법인 더봄의 상속세 계산기입니다.",
+    url: "https://thebomtax-inheritance-calculator.vercel.app",
+    siteName: "세무법인 더봄",
     locale: "ko_KR",
+    type: "website",
   },
-  robots: {
-    index: true,
-    follow: true,
+  twitter: {
+    card: "summary_large_image",
+    title: "상속세 계산기 | 세무법인 더봄",
+    description: "정확한 상속세 계산과 전문가 상담을 제공하는 세무법인 더봄의 상속세 계산기입니다.",
   },
-    generator: 'v0.dev'
+  icons: {
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+    other: [
+      {
+        rel: "android-chrome-192x192",
+        url: "/android-chrome-192x192.png",
+      },
+      {
+        rel: "android-chrome-512x512",
+        url: "/android-chrome-512x512.png",
+      },
+    ],
+  },
+  manifest: "/site.webmanifest",
+  generator: "v0.dev",
 }
 
 export default function RootLayout({
@@ -32,20 +65,12 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="ko" suppressHydrationWarning>
-      <head>
-        <link rel="icon" href="/favicon.ico" />
-        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-        <link rel="manifest" href="/site.webmanifest" />
-      </head>
+    <html lang="ko">
       <body className={inter.className}>
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
           {children}
           <Toaster />
         </ThemeProvider>
-
         {/* Kakao SDK */}
         <Script
           src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js"
@@ -54,7 +79,6 @@ export default function RootLayout({
           strategy="afterInteractive"
           onLoad={() => {
             if (typeof window !== "undefined" && window.Kakao) {
-              // 카카오 앱 키를 여기에 입력하세요 (JavaScript 키)
               if (!window.Kakao.isInitialized()) {
                 window.Kakao.init(process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "YOUR_KAKAO_APP_KEY")
               }

@@ -10,40 +10,13 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Loader2, AlertTriangle } from "lucide-react"
-
-interface CalculationData {
-  totalAssets: number
-  totalDebt: number
-  netAssets: number
-  taxableAmount: number
-  taxRate: number
-  progressiveDeduction: number
-  finalTax: number
-  basicDeduction: boolean
-  spouseDeduction: boolean
-  housingDeduction: boolean
-  realEstateTotal: number
-  financialAssetsTotal: number
-  giftAssetsTotal: number
-  otherAssetsTotal: number
-  financialDebtTotal: number
-  funeralExpenseTotal: number
-  taxArrearsTotal: number
-  otherDebtTotal: number
-  totalDeductions: number
-  financialDeduction: number
-  calculatedTax: number
-  giftTaxCredit: number
-  reportTaxCredit: number
-  totalTaxCredit: number
-  spouseDeductionAmount: number
-}
+import { Checkbox } from "@/components/ui/checkbox"
+import { AlertCircle, Loader2 } from "lucide-react"
 
 interface ConsultationModalProps {
   isOpen: boolean
   onClose: () => void
-  calculationData?: CalculationData
+  calculationData: any
 }
 
 export default function ConsultationModal({ isOpen, onClose, calculationData }: ConsultationModalProps) {
@@ -53,155 +26,149 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
     phone: "",
     message: "",
   })
+  const [privacyAgreed, setPrivacyAgreed] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState("")
+  const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle")
+  const [errorMessage, setErrorMessage] = useState("")
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }))
-    setError("")
+    setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!formData.name.trim() || !formData.phone.trim()) {
-      setError("이름과 전화번호를 입력해주세요.")
+    if (!privacyAgreed) {
+      setSubmitStatus("error")
+      setErrorMessage("개인정보 수집 및 이용에 동의해주세요.")
       return
     }
 
     setIsSubmitting(true)
-    setError("")
+    setSubmitStatus("idle")
+    setErrorMessage("")
 
     try {
       const response = await fetch("/api/consultation", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
           calculationData,
+          timestamp: new Date().toISOString(),
         }),
       })
 
-      if (response.ok) {
+      // Always attempt to read the body as text first.
+      const raw = await response.text()
+      console.log("Server response:", raw)
+
+      // If JSON parse succeeds, use it; otherwise fabricate a minimal object.
+      let parsed: any
+      try {
+        parsed = raw ? JSON.parse(raw) : {}
+      } catch (parseError) {
+        console.log("JSON parse failed:", parseError)
+        parsed = {}
+      }
+
+      // Normalise the success flag.
+      const ok = (response.ok && (parsed.success === undefined ? true : parsed.success)) || parsed.success === true
+
+      if (ok) {
+        // 성공 시 consultation-success 페이지로 이동
         onClose()
         router.push("/consultation-success")
       } else {
-        const errorData = await response.json()
-        setError(errorData.error || "상담 신청 중 오류가 발생했습니다.")
+        // 더 구체적인 오류 메시지 제공
+        let errorMsg = "상담 신청에 실패했습니다."
+
+        if (response.status >= 500) {
+          errorMsg = "서버에 일시적인 문제가 발생했습니다. 잠시 후 다시 시도해주세요."
+        } else if (response.status >= 400) {
+          errorMsg = parsed.message || "입력하신 정보를 확인해주세요."
+        }
+
+        throw new Error(errorMsg)
       }
-    } catch (error) {
-      console.error("상담 신청 오류:", error)
-      setError("네트워크 오류가 발생했습니다. 다시 시도해주세요.")
+    } catch (err) {
+      console.error("Consultation submission error:", err)
+      setSubmitStatus("error")
+
+      if (err instanceof TypeError && err.message.includes("fetch")) {
+        setErrorMessage("네트워크 연결을 확인해주세요.")
+      } else {
+        setErrorMessage(err instanceof Error ? err.message : "알 수 없는 오류가 발생했습니다.")
+      }
     } finally {
       setIsSubmitting(false)
     }
-  }
-
-  const convertWonToKoreanAmount = (amount: number): string => {
-    amount = amount / 10000
-    if (amount === 0) return "0(원)"
-
-    const units = ["", "만", "억", "조"]
-    const result = []
-    let tempAmount = Math.abs(amount)
-
-    for (let i = 0; i < units.length && tempAmount > 0; i++) {
-      const remainder = tempAmount % 10000
-      if (remainder > 0) {
-        result.unshift(`${remainder.toLocaleString("ko-KR")}${units[i]}`)
-      }
-      tempAmount = Math.floor(tempAmount / 10000)
-    }
-
-    const koreanAmount = result.join(" ")
-    return `${amount < 0 ? "-" : ""}${koreanAmount}(원)`
   }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold text-slate-900">전문가 상담 신청</DialogTitle>
+          <DialogTitle className="text-xl font-semibold">전문가 상담 신청</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6">
-          {calculationData && (
-            <div className="bg-blue-50 rounded-lg p-4">
-              <h3 className="font-semibold text-slate-900 mb-3">계산 결과 요약</h3>
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div>
-                  <span className="text-slate-600">총 재산가액:</span>
-                  <div className="font-medium">{convertWonToKoreanAmount(calculationData.totalAssets * 10000)}</div>
-                </div>
-                <div>
-                  <span className="text-slate-600">총 부채:</span>
-                  <div className="font-medium">{convertWonToKoreanAmount(calculationData.totalDebt * 10000)}</div>
-                </div>
-                <div>
-                  <span className="text-slate-600">순 재산가액:</span>
-                  <div className="font-medium">{convertWonToKoreanAmount(calculationData.netAssets * 10000)}</div>
-                </div>
-                <div>
-                  <span className="text-slate-600">예상 상속세:</span>
-                  <div className="font-bold text-blue-600">
-                    {convertWonToKoreanAmount(calculationData.finalTax * 10000)}
-                  </div>
-                </div>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="name">이름 *</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => handleInputChange("name", e.target.value)}
+                  required
+                  placeholder="홍길동"
+                />
+              </div>
+              <div>
+                <Label htmlFor="phone">연락처 *</Label>
+                <Input
+                  id="phone"
+                  value={formData.phone}
+                  onChange={(e) => handleInputChange("phone", e.target.value)}
+                  required
+                  placeholder="010-1234-5678"
+                />
               </div>
             </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <Label htmlFor="name" className="text-sm font-medium text-slate-700">
-                이름 *
-              </Label>
-              <Input
-                id="name"
-                type="text"
-                placeholder="이름을 입력해주세요"
-                value={formData.name}
-                onChange={(e) => handleInputChange("name", e.target.value)}
-                required
-              />
-            </div>
 
             <div>
-              <Label htmlFor="phone" className="text-sm font-medium text-slate-700">
-                전화번호 *
-              </Label>
-              <Input
-                id="phone"
-                type="tel"
-                placeholder="010-0000-0000"
-                value={formData.phone}
-                onChange={(e) => handleInputChange("phone", e.target.value)}
-                required
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="message" className="text-sm font-medium text-slate-700">
-                상담 내용 (선택사항)
-              </Label>
+              <Label htmlFor="message">상담 내용</Label>
               <Textarea
                 id="message"
-                placeholder="상담받고 싶은 내용을 자유롭게 작성해주세요"
                 value={formData.message}
                 onChange={(e) => handleInputChange("message", e.target.value)}
+                placeholder="상담받고 싶은 내용을 자세히 적어주세요."
                 rows={4}
               />
             </div>
 
-            {error && (
+            <div className="flex items-start space-x-2 pt-4">
+              <Checkbox
+                id="privacy-agreement"
+                checked={privacyAgreed}
+                onCheckedChange={(checked) => setPrivacyAgreed(checked as boolean)}
+              />
+              <div className="grid gap-1.5 leading-none">
+                <Label
+                  htmlFor="privacy-agreement"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  개인정보 수집 및 이용에 동의합니다 *
+                </Label>
+                <p className="text-xs text-muted-foreground">수집된 개인정보는 상담 목적으로만 사용됩니다.</p>
+              </div>
+            </div>
+
+            {submitStatus === "error" && (
               <Alert className="bg-red-50 border-red-200">
-                <AlertTriangle className="h-4 w-4 text-red-600" />
-                <AlertDescription className="text-red-800">{error}</AlertDescription>
+                <AlertCircle className="h-4 w-4 text-red-600" />
+                <AlertDescription className="text-red-800">{errorMessage}</AlertDescription>
               </Alert>
             )}
 
@@ -215,7 +182,11 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
               >
                 취소
               </Button>
-              <Button type="submit" className="flex-1 bg-slate-800 hover:bg-slate-900" disabled={isSubmitting}>
+              <Button
+                type="submit"
+                className="flex-1 bg-slate-700 hover:bg-slate-800"
+                disabled={isSubmitting || !privacyAgreed}
+              >
                 {isSubmitting ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -228,11 +199,14 @@ export default function ConsultationModal({ isOpen, onClose, calculationData }: 
             </div>
           </form>
 
-          <div className="text-xs text-slate-500 bg-slate-50 p-3 rounded">
+          <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded">
             <p className="font-medium mb-1">개인정보 처리 안내</p>
             <p>
-              입력하신 개인정보는 상담 목적으로만 사용되며, 상담 완료 후 안전하게 삭제됩니다. 자세한 내용은
-              개인정보처리방침을 확인해주세요.
+              • 수집항목: 이름, 연락처, 상담내용
+              <br />• 수집목적: 상속세 관련 전문 상담 제공
+              <br />• 보유기간: 상담 완료 후 3년
+              <br />• 귀하는 개인정보 수집·이용에 대한 동의를 거부할 권리가 있으나, 동의를 거부할 경우 상담 서비스
+              이용이 제한될 수 있습니다.
             </p>
           </div>
         </div>
