@@ -113,7 +113,7 @@ export default function ResultPage() {
   }, [])
 
   const convertWonToKoreanAmount = (amount: number): string => {
-    amount = amount/10000
+    amount = amount / 10000
     if (amount === 0) return "0(원)"
 
     const units = ["", "만", "억", "조"]
@@ -253,6 +253,12 @@ export default function ResultPage() {
 
   const { calculationResult } = calculationData
 
+  // 산출세액 계산 (과세표준 × 세율)
+  const calculatedTax = Math.round(calculationResult.taxableAmount * (calculationResult.taxRate / 100))
+
+  // 세액공제 계산 (산출세액 - 최종상속세)
+  const taxCredit = calculatedTax - calculationResult.finalTax
+
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm border-b border-gray-100">
@@ -346,9 +352,9 @@ export default function ResultPage() {
           <CardContent>
             <div className="space-y-3">
               <div className="flex justify-between py-2">
-                <span className="text-slate-600">총 재산가액</span>
+                <span className="text-slate-600">순 재산가액</span>
                 <span className="font-medium">
-                  {convertWonToKoreanAmount(calculationData.calculationResult.totalAssets * 10000)}
+                  {convertWonToKoreanAmount(calculationData.calculationResult.netAssets * 10000)}
                 </span>
               </div>
               <div className="flex justify-between py-2">
@@ -369,10 +375,12 @@ export default function ResultPage() {
                 <span className="font-medium">{calculationData.calculationResult.taxRate.toFixed(1)}%</span>
               </div>
               <div className="flex justify-between py-2">
-                <span className="text-slate-600">누진공제</span>
-                <span className="font-medium text-green-600">
-                  -{convertWonToKoreanAmount(calculationData.calculationResult.progressiveDeduction * 10000)}
-                </span>
+                <span className="text-slate-600">산출세액</span>
+                <span className="font-medium">{convertWonToKoreanAmount(calculatedTax * 10000)}</span>
+              </div>
+              <div className="flex justify-between py-2">
+                <span className="text-slate-600">세액공제</span>
+                <span className="font-medium text-green-600">-{convertWonToKoreanAmount(taxCredit * 10000)}</span>
               </div>
               <hr />
               <div className="flex justify-between py-2 font-bold text-lg">
