@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { AlertTriangle, Share2, Copy, Phone } from "lucide-react"
+import { AlertTriangle, Share2, Copy, Phone, MessageCircle } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import ConsultationModal from "@/components/consultation-modal"
@@ -146,21 +146,25 @@ export default function ResultPage() {
     window.location.href = "/"
   }
 
-  const generateShareUrl = () => {
+  const generateShareMessage = () => {
     if (!calculationData) return ""
 
-    const encodedData = encodeURIComponent(JSON.stringify(calculationData))
-    return `${window.location.origin}/result?data=${encodedData}`
+    const finalTaxAmount = convertWonToKoreanAmount(calculationData.calculationResult.finalTax * 10000)
+
+    return `예상되는 최종상속세는 ${finalTaxAmount}입니다.
+
+지금 바로 상속세 계산하기
+상속세더봄.com`
   }
 
-  const handleCopyLink = async () => {
+  const handleCopyMessage = async () => {
     if (!calculationData) return
 
     setIsSharing(true)
 
     try {
-      const shareUrl = generateShareUrl()
-      await navigator.clipboard.writeText(shareUrl)
+      const shareMessage = generateShareMessage()
+      await navigator.clipboard.writeText(shareMessage)
 
       setShareButtonText("✅ 복사완료!")
       setTimeout(() => {
@@ -168,7 +172,7 @@ export default function ResultPage() {
         setShowShareOptions(false)
       }, 2000)
     } catch (error) {
-      alert("링크 복사에 실패했습니다.")
+      alert("메시지 복사에 실패했습니다.")
     } finally {
       setIsSharing(false)
     }
@@ -181,21 +185,37 @@ export default function ResultPage() {
   const handleWebShare = async () => {
     if (!calculationData) return
 
-    const shareUrl = generateShareUrl()
+    const shareMessage = generateShareMessage()
     const shareData = {
       title: "상속세 계산 결과",
-      text: `상속세 계산 결과: ${convertWonToKoreanAmount(calculationData.calculationResult.finalTax * 10000)}`,
-      url: shareUrl,
+      text: shareMessage,
     }
 
     try {
       if (navigator.share) {
         await navigator.share(shareData)
       } else {
-        await handleCopyLink()
+        await handleCopyMessage()
       }
     } catch (error) {
       // 공유 실패 시 무시
+    }
+  }
+
+  const handleKakaoShare = () => {
+    if (!calculationData) return
+
+    const shareMessage = generateShareMessage()
+    const encodedMessage = encodeURIComponent(shareMessage)
+
+    // 카카오톡 공유 URL (모바일에서 작동)
+    const kakaoUrl = `kakaotalk://send?text=${encodedMessage}`
+
+    try {
+      window.location.href = kakaoUrl
+    } catch (error) {
+      // 카카오톡이 설치되지 않은 경우 메시지 복사
+      handleCopyMessage()
     }
   }
 
@@ -425,10 +445,18 @@ export default function ResultPage() {
                   <Button
                     variant="ghost"
                     className="w-full justify-start text-left hover:bg-gray-50"
-                    onClick={handleCopyLink}
+                    onClick={handleKakaoShare}
+                  >
+                    <MessageCircle className="w-4 h-4 mr-2" />
+                    카카오톡 공유
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start text-left hover:bg-gray-50"
+                    onClick={handleCopyMessage}
                   >
                     <Copy className="w-4 h-4 mr-2" />
-                    링크 복사
+                    메시지 복사
                   </Button>
                   <Button
                     variant="ghost"
@@ -440,7 +468,10 @@ export default function ResultPage() {
                   </Button>
                 </div>
                 <div className="px-3 py-2 border-t border-gray-100">
-                  <p className="text-xs text-gray-500">현재 도메인: {window.location.hostname}</p>
+                  <p className="text-xs text-gray-500">
+                    메시지: "예상되는 최종상속세는{" "}
+                    {convertWonToKoreanAmount(calculationData.calculationResult.finalTax * 10000)}입니다."
+                  </p>
                 </div>
               </div>
             )}
