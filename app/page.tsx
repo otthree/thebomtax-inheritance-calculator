@@ -431,11 +431,6 @@ export default function InheritanceTaxCalculator() {
     }
   }
 
-  const formatNumber = (num: number) => {
-    const rounded = Math.round(num / 10000)
-    return rounded.toLocaleString("ko-KR")
-  }
-
   const nextStep = () => {
     if (currentStep < 4) {
       setCurrentStep(currentStep + 1)
@@ -1079,7 +1074,7 @@ export default function InheritanceTaxCalculator() {
                     {convertWonToKoreanAmount(calculationResult.finalTax)}
                   </p>
                 </div>
-                
+
                 <div className="mt-6 pt-4 border-t border-slate-200">
                   <h4 className="font-medium mb-3 text-slate-900">상세 내역</h4>
                   <div className="space-y-2 text-sm">

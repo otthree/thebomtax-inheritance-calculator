@@ -118,7 +118,7 @@ export default function ResultPage() {
       }
     }
     setLoading(false)
-  }, [])
+  }, [router, searchParams])
 
   const convertWonToKoreanAmount = (amount: number): string => {
     amount = amount / 10000
@@ -138,11 +138,6 @@ export default function ResultPage() {
 
     const koreanAmount = result.join(" ")
     return `${amount < 0 ? "-" : ""}${koreanAmount}원`
-  }
-
-  const formatNumber = (num: number) => {
-    const rounded = Math.round(num / 10000)
-    return convertWonToKoreanAmount(rounded * 10000)
   }
 
   const handleFeeCheck = () => {
@@ -231,7 +226,6 @@ export default function ResultPage() {
         content: {
           title: "상속세 계산 결과 | 세무법인 더봄",
           description: `예상되는 최종상속세는 ${finalTaxAmount}입니다.\n\n정확한 상속세 계산과 전문가 상담을 받아보세요.`,
-          // 이미지 URL을 제거하거나 공개적으로 접근 가능한 URL로 변경
           imageUrl: `${window.location.origin}/logo-deobom-blue.png`,
           link: {
             mobileWebUrl: shareUrl,
@@ -260,7 +254,7 @@ export default function ResultPage() {
 
       // 에러 코드별 상세 메시지
       let errorMessage = "카카오톡 공유에 실패했습니다."
-      if (error && error.code) {
+      if (error && typeof error === "object" && "code" in error) {
         switch (error.code) {
           case -777:
             errorMessage = "카카오톡이 설치되지 않았습니다."

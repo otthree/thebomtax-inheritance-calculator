@@ -10,53 +10,16 @@ const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
   title: "상속세 계산기 | 세무법인 더봄",
-  description: "정확한 상속세 계산과 전문가 상담을 제공하는 세무법인 더봄의 상속세 계산기입니다.",
-  keywords: "상속세, 계산기, 세무법인, 더봄, 상속세계산, 세무상담",
-  authors: [{ name: "세무법인 더봄" }],
-  creator: "세무법인 더봄",
-  publisher: "세무법인 더봄",
-  formatDetection: {
-    email: false,
-    address: false,
-    telephone: false,
-  },
-  metadataBase: new URL("https://thebomtax-inheritance-calculator.vercel.app"),
-  alternates: {
-    canonical: "/",
-  },
+  description:
+    "2025년 기준 상속세 계산기. 전문 세무사 검증, 무료 서비스. 정확한 상속세 계산과 전문가 상담을 받아보세요.",
+  keywords: "상속세, 상속세계산기, 세무법인, 더봄, 상속세율, 상속공제",
   openGraph: {
     title: "상속세 계산기 | 세무법인 더봄",
-    description: "정확한 상속세 계산과 전문가 상담을 제공하는 세무법인 더봄의 상속세 계산기입니다.",
-    url: "https://thebomtax-inheritance-calculator.vercel.app",
-    siteName: "세무법인 더봄",
-    locale: "ko_KR",
+    description: "2025년 기준 상속세 계산기. 전문 세무사 검증, 무료 서비스.",
     type: "website",
+    locale: "ko_KR",
   },
-  twitter: {
-    card: "summary_large_image",
-    title: "상속세 계산기 | 세무법인 더봄",
-    description: "정확한 상속세 계산과 전문가 상담을 제공하는 세무법인 더봄의 상속세 계산기입니다.",
-  },
-  icons: {
-    icon: [
-      { url: "/favicon.ico" },
-      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
-      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
-    ],
-    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
-    other: [
-      {
-        rel: "android-chrome-192x192",
-        url: "/android-chrome-192x192.png",
-      },
-      {
-        rel: "android-chrome-512x512",
-        url: "/android-chrome-512x512.png",
-      },
-    ],
-  },
-  manifest: "/site.webmanifest",
-  generator: "v0.dev",
+    generator: 'v0.dev'
 }
 
 export default function RootLayout({
@@ -65,34 +28,29 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="ko">
-      <body className={inter.className}>
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
-          {children}
-          <Toaster />
-        </ThemeProvider>
-        {/* Kakao SDK */}
+    <html lang="ko" suppressHydrationWarning>
+      <head>
         <Script
           src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js"
           integrity="sha384-TiCUE00h649CAMonG018J2ujOgDKW/kVWlChEuu4jK2vxfAAD0eZxzCKakxg55G4"
           crossOrigin="anonymous"
           strategy="afterInteractive"
-          onLoad={() => {
-            if (typeof window !== "undefined" && window.Kakao && !window.Kakao.isInitialized()) {
-              try {
-                const kakaoKey = process.env.NEXT_PUBLIC_KAKAO_APP_KEY
-                if (kakaoKey && kakaoKey !== "YOUR_KAKAO_APP_KEY") {
-                  window.Kakao.init(kakaoKey)
-                  console.log("Kakao SDK initialized successfully")
-                } else {
-                  console.error("Kakao App Key is not set properly")
-                }
-              } catch (error) {
-                console.error("Failed to initialize Kakao SDK:", error)
+        />
+        <Script id="kakao-init" strategy="afterInteractive">
+          {`
+            if (typeof window !== 'undefined' && window.Kakao) {
+              if (!window.Kakao.isInitialized()) {
+                window.Kakao.init('${process.env.NEXT_PUBLIC_KAKAO_APP_KEY}');
               }
             }
-          }}
-        />
+          `}
+        </Script>
+      </head>
+      <body className={inter.className}>
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
+          {children}
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   )
