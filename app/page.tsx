@@ -7,9 +7,12 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Progress } from "@/components/ui/progress"
-import { X } from "lucide-react"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Calculator, AlertTriangle, Phone, Plus, X } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
+import ConsultationModal from "@/components/consultation-modal"
+import { Footer } from "@/components/footer"
 
 export default function InheritanceTaxCalculator() {
   const router = useRouter()
@@ -744,4 +747,449 @@ export default function InheritanceTaxCalculator() {
                                   name={`relationship-${gift.id}`}
                                   value="spouse"
                                   checked={gift.relationship === "spouse"}
-                                  onChange={(e) => updateGiftItem
+                                  onChange={(e) => updateGiftItem(gift.id, "relationship", e.target.value)}
+                                  className="mr-2"
+                                />
+                                <span className="text-sm">배우자</span>
+                              </label>
+                              <label className="flex items-center">
+                                <input
+                                  type="radio"
+                                  name={`relationship-${gift.id}`}
+                                  value="child"
+                                  checked={gift.relationship === "child"}
+                                  onChange={(e) => updateGiftItem(gift.id, "relationship", e.target.value)}
+                                  className="mr-2"
+                                />
+                                <span className="text-sm">자녀</span>
+                              </label>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+
+                    <Button
+                      variant="outline"
+                      onClick={addGiftItem}
+                      className="w-full border-dashed border-gray-300 text-gray-600 hover:text-gray-800 hover:border-gray-400 bg-transparent"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      증여 항목 추가
+                    </Button>
+                  </div>
+
+                  <Alert className="bg-blue-50 border-blue-200">
+                    <AlertTriangle className="h-4 w-4 text-blue-600" />
+                    <AlertDescription className="text-blue-800">
+                      <strong>💡 증여세액공제 안내</strong>
+                      <br />• 배우자: 6억원 공제 후 증여세 계산
+                      <br />• 자녀: 5천만원 공제 후 증여세 계산
+                    </AlertDescription>
+                  </Alert>
+
+                  <div className="flex justify-between pt-4">
+                    <Button variant="outline" onClick={prevStep}>
+                      이전
+                    </Button>
+                    <Button onClick={nextStep} className="bg-slate-700 hover:bg-slate-800">
+                      다음
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {currentStep === 3 && (
+              <Card className="mt-6">
+                <CardHeader>
+                  <CardTitle className="text-lg">채무 및 비용</CardTitle>
+                  <p className="text-sm text-gray-600">피상속인의 채무와 장례비용을 입력해주세요</p>
+                </CardHeader>
+                <CardContent className="space-y-8">
+                  <div>
+                    <h3 className="text-base font-semibold mb-4 text-slate-900">채무</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <Label htmlFor="mortgageLoan" className="text-sm font-medium">
+                          담보대출 <span className="text-xs text-gray-500">(단위 : 만원)</span>
+                        </Label>
+                        <Input
+                          id="mortgageLoan"
+                          placeholder="예: 30,000"
+                          value={formData.mortgageLoan}
+                          onChange={(e) => handleInputChange("mortgageLoan", e.target.value)}
+                        />
+                        {formData.mortgageLoan && (
+                          <p className="text-xs text-gray-400 mt-1">{convertToKoreanAmount(formData.mortgageLoan)}</p>
+                        )}
+                      </div>
+                      <div>
+                        <Label htmlFor="creditLoan" className="text-sm font-medium">
+                          신용대출 <span className="text-xs text-gray-500">(단위 : 만원)</span>
+                        </Label>
+                        <Input
+                          id="creditLoan"
+                          placeholder="예: 5,000"
+                          value={formData.creditLoan}
+                          onChange={(e) => handleInputChange("creditLoan", e.target.value)}
+                        />
+                        {formData.creditLoan && (
+                          <p className="text-xs text-gray-400 mt-1">{convertToKoreanAmount(formData.creditLoan)}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="text-base font-semibold mb-4 text-slate-900">비용</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <Label htmlFor="funeralExpense" className="text-sm font-medium">
+                          장례비용 <span className="text-xs text-gray-500">(단위 : 만원, 최대 1,500만원)</span>
+                        </Label>
+                        <Input
+                          id="funeralExpense"
+                          placeholder="예: 1,000"
+                          value={formData.funeralExpense}
+                          onChange={(e) => handleInputChange("funeralExpense", e.target.value)}
+                        />
+                        {formData.funeralExpense && (
+                          <p className="text-xs text-gray-400 mt-1">{convertToKoreanAmount(formData.funeralExpense)}</p>
+                        )}
+                      </div>
+                      <div>
+                        <Label htmlFor="otherDebt" className="text-sm font-medium">
+                          기타 채무 <span className="text-xs text-gray-500">(단위 : 만원)</span>
+                        </Label>
+                        <Input
+                          id="otherDebt"
+                          placeholder="예: 2,000"
+                          value={formData.otherDebt}
+                          onChange={(e) => handleInputChange("otherDebt", e.target.value)}
+                        />
+                        {formData.otherDebt && (
+                          <p className="text-xs text-gray-400 mt-1">{convertToKoreanAmount(formData.otherDebt)}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between pt-4">
+                    <Button variant="outline" onClick={prevStep}>
+                      이전
+                    </Button>
+                    <Button onClick={nextStep} className="bg-slate-700 hover:bg-slate-800">
+                      다음
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {currentStep === 4 && (
+              <Card className="mt-6">
+                <CardHeader>
+                  <CardTitle className="text-lg">공제혜택</CardTitle>
+                  <p className="text-sm text-gray-600">적용 가능한 공제 항목을 선택해주세요</p>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-4">
+                    <div className="flex items-start space-x-3 p-4 border border-gray-200 rounded-lg">
+                      <input
+                        type="checkbox"
+                        id="basicDeduction"
+                        checked={formData.basicDeduction}
+                        onChange={(e) => {
+                          const newFormData = { ...formData, basicDeduction: e.target.checked }
+                          setFormData(newFormData)
+                          calculateTax(newFormData)
+                        }}
+                        className="mt-1"
+                      />
+                      <div className="flex-1">
+                        <Label htmlFor="basicDeduction" className="text-sm font-medium cursor-pointer">
+                          기초공제 (5억원)
+                        </Label>
+                        <p className="text-xs text-gray-500 mt-1">모든 상속인에게 적용되는 기본 공제</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start space-x-3 p-4 border border-gray-200 rounded-lg">
+                      <input
+                        type="checkbox"
+                        id="spouseDeduction"
+                        checked={formData.spouseDeduction}
+                        onChange={(e) => {
+                          const newFormData = { ...formData, spouseDeduction: e.target.checked }
+                          setFormData(newFormData)
+                          calculateTax(newFormData)
+                        }}
+                        className="mt-1"
+                      />
+                      <div className="flex-1">
+                        <Label htmlFor="spouseDeduction" className="text-sm font-medium cursor-pointer">
+                          배우자공제 (최소 5억원 ~ 최대 30억원)
+                        </Label>
+                        <p className="text-xs text-gray-500 mt-1">배우자가 상속받는 경우 적용</p>
+                      </div>
+                    </div>
+
+                    {formData.spouseDeduction && (
+                      <div className="ml-6 p-4 bg-gray-50 rounded-lg space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div>
+                            <Label htmlFor="childrenCount" className="text-sm font-medium">
+                              자녀 수 (명)
+                            </Label>
+                            <Input
+                              id="childrenCount"
+                              type="number"
+                              placeholder="0"
+                              value={formData.childrenCount}
+                              onChange={(e) => handleNumberInputChange("childrenCount", e.target.value)}
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="parentsCount" className="text-sm font-medium">
+                              부모 수 (명)
+                            </Label>
+                            <Input
+                              id="parentsCount"
+                              type="number"
+                              placeholder="0"
+                              value={formData.parentsCount}
+                              onChange={(e) => handleNumberInputChange("parentsCount", e.target.value)}
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="spouseExpectedInheritance" className="text-sm font-medium">
+                              배우자 상속예정액 <span className="text-xs text-gray-500">(단위 : 만원)</span>
+                            </Label>
+                            <Input
+                              id="spouseExpectedInheritance"
+                              placeholder="예: 50,000"
+                              value={formData.spouseExpectedInheritance}
+                              onChange={(e) => handleInputChange("spouseExpectedInheritance", e.target.value)}
+                            />
+                            {formData.spouseExpectedInheritance && (
+                              <p className="text-xs text-gray-400 mt-1">
+                                {convertToKoreanAmount(formData.spouseExpectedInheritance)}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        {calculationResult.spouseDeductionAmount > 0 && (
+                          <div className="text-sm text-blue-600 font-medium">
+                            계산된 배우자공제액: {convertWonToKoreanAmount(calculationResult.spouseDeductionAmount)}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="flex items-start space-x-3 p-4 border border-gray-200 rounded-lg">
+                      <input
+                        type="checkbox"
+                        id="housingDeduction"
+                        checked={formData.housingDeduction}
+                        onChange={(e) => {
+                          const newFormData = { ...formData, housingDeduction: e.target.checked }
+                          setFormData(newFormData)
+                          calculateTax(newFormData)
+                        }}
+                        className="mt-1"
+                      />
+                      <div className="flex-1">
+                        <Label htmlFor="housingDeduction" className="text-sm font-medium cursor-pointer">
+                          주택공제 (6억원)
+                        </Label>
+                        <p className="text-xs text-gray-500 mt-1">피상속인과 동거한 상속인이 주택을 상속받는 경우</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between pt-4">
+                    <Button variant="outline" onClick={prevStep}>
+                      이전
+                    </Button>
+                    <Button onClick={handleCalculate} className="bg-blue-600 hover:bg-blue-700 text-white">
+                      계산하기
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          <div className="lg:col-span-1">
+            <div className="sticky top-8">
+              <Card className="bg-gradient-to-br from-slate-50 to-white border-slate-200">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-lg text-slate-900 flex items-center">
+                    <Calculator className="w-5 h-5 mr-2 text-slate-600" />
+                    실시간 계산 결과
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="text-center p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-100">
+                    <p className="text-sm text-slate-600 mb-2">예상 상속세</p>
+                    <p className="text-2xl font-bold text-blue-600">
+                      {convertWonToKoreanAmount(calculationResult.finalTax)}
+                    </p>
+                  </div>
+
+                  <div className="space-y-3 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-slate-600">총 재산</span>
+                      <span className="font-medium">{convertWonToKoreanAmount(calculationResult.totalAssets)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-600">총 채무</span>
+                      <span className="font-medium text-red-600">
+                        -{convertWonToKoreanAmount(calculationResult.totalDebt)}
+                      </span>
+                    </div>
+                    <hr className="border-gray-200" />
+                    <div className="flex justify-between">
+                      <span className="text-slate-600">순 재산가액</span>
+                      <span className="font-medium">{convertWonToKoreanAmount(calculationResult.netAssets)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-600">총 공제액</span>
+                      <span className="font-medium text-green-600">
+                        -{convertWonToKoreanAmount(calculationResult.totalDeductions)}
+                      </span>
+                    </div>
+                    <hr className="border-gray-200" />
+                    <div className="flex justify-between">
+                      <span className="text-slate-600">과세표준</span>
+                      <span className="font-medium">{convertWonToKoreanAmount(calculationResult.taxableAmount)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-600">적용 세율</span>
+                      <span className="font-medium">{calculationResult.taxRate.toFixed(1)}%</span>
+                    </div>
+                  </div>
+
+                  <Button
+                    variant="ghost"
+                    onClick={toggleDetails}
+                    className="w-full text-slate-600 hover:text-slate-800 text-sm"
+                  >
+                    {showDetails ? "간단히 보기" : "상세보기"}
+                  </Button>
+
+                  {showDetails && (
+                    <div className="space-y-3 text-sm border-t pt-4">
+                      <div className="space-y-2">
+                        <h4 className="font-medium text-slate-700">재산 상세</h4>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-slate-500">부동산</span>
+                          <span>{convertWonToKoreanAmount(calculationResult.realEstateTotal)}</span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-slate-500">금융자산</span>
+                          <span>{convertWonToKoreanAmount(calculationResult.financialAssetsTotal)}</span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-slate-500">증여재산</span>
+                          <span>{convertWonToKoreanAmount(calculationResult.giftAssetsTotal)}</span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-slate-500">기타자산</span>
+                          <span>{convertWonToKoreanAmount(calculationResult.otherAssetsTotal)}</span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <h4 className="font-medium text-slate-700">공제 상세</h4>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-slate-500">기초공제</span>
+                          <span>{formData.basicDeduction ? "5억원" : "0원"}</span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-slate-500">배우자공제</span>
+                          <span>
+                            {formData.spouseDeduction
+                              ? convertWonToKoreanAmount(calculationResult.spouseDeductionAmount)
+                              : "0원"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-slate-500">주택공제</span>
+                          <span>{formData.housingDeduction ? "6억원" : "0원"}</span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-slate-500">금융재산공제</span>
+                          <span>{convertWonToKoreanAmount(calculationResult.financialDeduction)}</span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <h4 className="font-medium text-slate-700">세액 계산</h4>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-slate-500">산출세액</span>
+                          <span>{convertWonToKoreanAmount(calculationResult.calculatedTax)}</span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-slate-500">증여세액공제</span>
+                          <span className="text-green-600">
+                            -{convertWonToKoreanAmount(calculationResult.giftTaxCredit)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-slate-500">신고세액공제</span>
+                          <span className="text-green-600">
+                            -{convertWonToKoreanAmount(calculationResult.reportTaxCredit)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="pt-4 border-t">
+                    <Button
+                      className="w-full bg-slate-700 hover:bg-slate-800 text-white"
+                      onClick={() => setIsConsultationModalOpen(true)}
+                    >
+                      전문가 상담받기
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="mt-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+                <CardContent className="text-center py-6">
+                  <h3 className="text-lg font-semibold text-slate-900 mb-3">💡 전문가 팁</h3>
+                  <div className="text-sm text-slate-600 space-y-2">
+                    <p>• 상속세는 신고기한(6개월) 내 신고 시 3% 공제</p>
+                    <p>• 배우자공제는 최대 30억원까지 가능</p>
+                    <p>• 증여재산은 10년 내 합산하여 계산</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="md:hidden fixed bottom-6 right-6 z-50">
+        <a
+          href="tel:02-336-0309"
+          className="w-14 h-14 bg-slate-800 hover:bg-slate-900 text-white rounded-full flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-110"
+          aria-label="전화걸기"
+        >
+          <Phone className="w-6 h-6" />
+        </a>
+      </div>
+
+      <ConsultationModal
+        isOpen={isConsultationModalOpen}
+        onClose={() => setIsConsultationModalOpen(false)}
+        calculationData={consultationData}
+      />
+
+      <Footer />
+    </div>
+  )
+}
