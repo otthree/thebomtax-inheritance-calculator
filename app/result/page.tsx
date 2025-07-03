@@ -115,7 +115,7 @@ export default function ResultPage() {
 
   const convertWonToKoreanAmount = (amount: number): string => {
     amount = amount / 10000
-    if (amount === 0) return "0(원)"
+    if (amount === 0) return "0원"
 
     const units = ["", "만", "억", "조"]
     const result = []
@@ -130,20 +130,12 @@ export default function ResultPage() {
     }
 
     const koreanAmount = result.join(" ")
-    return `${amount < 0 ? "-" : ""}${koreanAmount}(원)`
+    return `${amount < 0 ? "-" : ""}${koreanAmount}원`
   }
 
   const formatNumber = (num: number) => {
     const rounded = Math.round(num / 10000)
     return convertWonToKoreanAmount(rounded * 10000)
-  }
-
-  const handleFeeCheck = () => {
-    window.open("https://blog.naver.com/l77155/223777746014", "_blank")
-  }
-
-  const handleBackToCalculator = () => {
-    window.location.href = "/"
   }
 
   const generateShareMessage = () => {
@@ -153,8 +145,15 @@ export default function ResultPage() {
 
     return `예상되는 최종상속세는 ${finalTaxAmount}입니다.
 
-지금 바로 상속세 계산하기
-상속세더봄.com`
+지금 바로 상속세 계산하기 상속세더봄.com`
+  }
+
+  const handleFeeCheck = () => {
+    window.open("https://blog.naver.com/l77155/223777746014", "_blank")
+  }
+
+  const handleBackToCalculator = () => {
+    window.location.href = "/"
   }
 
   const handleCopyMessage = async () => {
@@ -198,24 +197,8 @@ export default function ResultPage() {
         await handleCopyMessage()
       }
     } catch (error) {
-      // 공유 실패 시 무시
-    }
-  }
-
-  const handleKakaoShare = () => {
-    if (!calculationData) return
-
-    const shareMessage = generateShareMessage()
-    const encodedMessage = encodeURIComponent(shareMessage)
-
-    // 카카오톡 공유 URL (모바일에서 작동)
-    const kakaoUrl = `kakaotalk://send?text=${encodedMessage}`
-
-    try {
-      window.location.href = kakaoUrl
-    } catch (error) {
-      // 카카오톡이 설치되지 않은 경우 메시지 복사
-      handleCopyMessage()
+      // 공유 실패 시 복사로 대체
+      await handleCopyMessage()
     }
   }
 
@@ -445,14 +428,6 @@ export default function ResultPage() {
                   <Button
                     variant="ghost"
                     className="w-full justify-start text-left hover:bg-gray-50"
-                    onClick={handleKakaoShare}
-                  >
-                    <MessageCircle className="w-4 h-4 mr-2" />
-                    카카오톡 공유
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start text-left hover:bg-gray-50"
                     onClick={handleCopyMessage}
                   >
                     <Copy className="w-4 h-4 mr-2" />
@@ -463,15 +438,12 @@ export default function ResultPage() {
                     className="w-full justify-start text-left hover:bg-gray-50"
                     onClick={handleWebShare}
                   >
-                    <Share2 className="w-4 h-4 mr-2" />
-                    공유하기
+                    <MessageCircle className="w-4 h-4 mr-2" />
+                    카톡/메시지 공유
                   </Button>
                 </div>
                 <div className="px-3 py-2 border-t border-gray-100">
-                  <p className="text-xs text-gray-500">
-                    메시지: "예상되는 최종상속세는{" "}
-                    {convertWonToKoreanAmount(calculationData.calculationResult.finalTax * 10000)}입니다."
-                  </p>
+                  <p className="text-xs text-gray-500">계산 결과를 간단한 메시지로 공유합니다</p>
                 </div>
               </div>
             )}
