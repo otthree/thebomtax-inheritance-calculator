@@ -153,14 +153,40 @@ export default function ResultPage() {
     return `${window.location.origin}/result?data=${encodedData}`
   }
 
+  // URL 단축 함수
+  const shortenUrl = async (originalUrl: string): Promise<string> => {
+    try {
+      const response = await fetch("/api/shorten", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ originalUrl }),
+      })
+
+      if (!response.ok) {
+        throw new Error("URL 단축 실패")
+      }
+
+      const data = await response.json()
+      return data.shortUrl
+    } catch (error) {
+      console.error("URL 단축 오류:", error)
+      return originalUrl // 실패 시 원본 URL 반환
+    }
+  }
+
   const handleCopyLink = async () => {
     if (!calculationData) return
 
     setIsSharing(true)
+    setShareButtonText("🔗 단축중...")
 
     try {
-      const shareUrl = generateShareUrl()
-      await navigator.clipboard.writeText(shareUrl)
+      const originalUrl = generateShareUrl()
+      const shortUrl = await shortenUrl(originalUrl)
+
+      await navigator.clipboard.writeText(shortUrl)
 
       setShareButtonText("✅ 복사완료!")
       setTimeout(() => {
@@ -168,7 +194,10 @@ export default function ResultPage() {
         setShowShareOptions(false)
       }, 2000)
     } catch (error) {
-      alert("링크 복사에 실패했습니다.")
+      setShareButtonText("❌ 복사실패")
+      setTimeout(() => {
+        setShareButtonText("📤 공유")
+      }, 2000)
     } finally {
       setIsSharing(false)
     }
@@ -181,21 +210,32 @@ export default function ResultPage() {
   const handleWebShare = async () => {
     if (!calculationData) return
 
-    const shareUrl = generateShareUrl()
-    const shareData = {
-      title: "상속세 계산 결과",
-      text: `상속세 계산 결과: ${convertWonToKoreanAmount(calculationData.calculationResult.finalTax * 10000)}`,
-      url: shareUrl,
-    }
+    setIsSharing(true)
 
     try {
+      const originalUrl = generateShareUrl()
+      const shortUrl = await shortenUrl(originalUrl)
+
+      const shareData = {
+        title: "상속세 계산 결과",
+        text: `상속세 계산 결과: ${convertWonToKoreanAmount(calculationData.calculationResult.finalTax * 10000)}`,
+        url: shortUrl,
+      }
+
       if (navigator.share) {
         await navigator.share(shareData)
       } else {
-        await handleCopyLink()
+        await navigator.clipboard.writeText(shortUrl)
+        setShareButtonText("✅ 복사완료!")
+        setTimeout(() => {
+          setShareButtonText("📤 공유")
+          setShowShareOptions(false)
+        }, 2000)
       }
     } catch (error) {
       // 공유 실패 시 무시
+    } finally {
+      setIsSharing(false)
     }
   }
 
@@ -412,7 +452,7 @@ export default function ResultPage() {
               {isSharing ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  생성중...
+                  {shareButtonText.includes("단축") ? "단축중..." : "생성중..."}
                 </>
               ) : (
                 shareButtonText
@@ -426,21 +466,23 @@ export default function ResultPage() {
                     variant="ghost"
                     className="w-full justify-start text-left hover:bg-gray-50"
                     onClick={handleCopyLink}
+                    disabled={isSharing}
                   >
                     <Copy className="w-4 h-4 mr-2" />
-                    링크 복사
+                    단축 링크 복사
                   </Button>
                   <Button
                     variant="ghost"
                     className="w-full justify-start text-left hover:bg-gray-50"
                     onClick={handleWebShare}
+                    disabled={isSharing}
                   >
                     <Share2 className="w-4 h-4 mr-2" />
                     공유하기
                   </Button>
                 </div>
                 <div className="px-3 py-2 border-t border-gray-100">
-                  <p className="text-xs text-gray-500">현재 도메인: {window.location.hostname}</p>
+                  <p className="text-xs text-gray-500">🔗 자동으로 URL이 단축됩니다</p>
                 </div>
               </div>
             )}
