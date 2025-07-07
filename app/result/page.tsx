@@ -153,7 +153,7 @@ export default function ResultPage() {
     return `${window.location.origin}/result?data=${encodedData}`
   }
 
-  // Upstash Redis를 사용한 URL 단축 함수
+  // URL 단축 함수 (Redis 또는 메모리 저장소 사용)
   const shortenUrl = async (originalUrl: string): Promise<string> => {
     try {
       const response = await fetch("/api/shorten", {
@@ -169,8 +169,8 @@ export default function ResultPage() {
         if (!contentType.includes("application/json")) {
           throw new Error("서버가 JSON을 반환하지 않았습니다.")
         }
-        const data = (await response.json()) as { shortUrl: string }
-        console.log("✅ URL 단축 성공:", data)
+        const data = (await response.json()) as { shortUrl: string; storage?: string }
+        console.log(`✅ URL 단축 성공 (${data.storage || "unknown"}):`, data)
         return data.shortUrl
       }
 
