@@ -11,7 +11,7 @@ import Link from "next/link"
 export default function ShortUrlRedirectPage() {
   const params = useParams()
   const router = useRouter()
-  const [countdown, setCountdown] = useState(5)
+  const [countdown, setCountdown] = useState(2)
   const [originalUrl, setOriginalUrl] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isRedirecting, setIsRedirecting] = useState(false)
