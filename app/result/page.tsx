@@ -351,13 +351,6 @@ export default function ResultPage() {
                 상담신청
               </Button>
             </div>
-            <div className="md:hidden">
-              <Button variant="ghost" size="sm">
-                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              </Button>
-            </div>
           </div>
         </div>
       </header>
