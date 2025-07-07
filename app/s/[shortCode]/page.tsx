@@ -122,14 +122,9 @@ export default function ShortUrlRedirectPage() {
             <div className="font-mono text-blue-600 break-all">{getKoreanDomain(data.originalUrl)}</div>
           </div>
 
-          <div className="bg-blue-50 rounded-lg p-4 mb-6">
-            <div className="text-sm text-gray-500 mb-2">원본 URL</div>
-            <div className="text-sm text-gray-800 break-all">{data.originalUrl}</div>
-          </div>
-
           <div className="flex items-center justify-center text-sm text-gray-500 mb-6">
             <Clock className="w-4 h-4 mr-2" />
-            {redirecting ? "리다이렉트 중..." : "3초 후 자동 이동"}
+            {redirecting ? "리다이렉트 중..." : "2초 후 자동 이동"}
           </div>
 
           <div className="space-y-3">
