@@ -238,75 +238,6 @@ export default function ResultPage() {
     }
   }
 
-  const handleKakaoShare = () => {
-    if (!calculationData) return
-
-    // Kakao SDK 최종 확인
-    if (typeof window === "undefined" || !window.Kakao || !window.Kakao.isInitialized()) {
-      alert("카카오톡 SDK를 사용할 수 없습니다. 링크를 복사합니다.")
-      handleCopyLink()
-      return
-    }
-
-    const finalTaxAmount = convertWonToKoreanAmount(calculationData.calculationResult.finalTax * 10000)
-    const shareUrl = generateShareUrl()
-
-    try {
-      window.Kakao.Share.sendDefault({
-        objectType: "feed",
-        content: {
-          title: "상속세 계산 결과 | 세무법인 더봄",
-          description: `예상되는 최종상속세는 ${finalTaxAmount}입니다.\n\n정확한 상속세 계산과 전문가 상담을 받아보세요.`,
-          imageUrl: `${window.location.origin}/logo-thebom-square-blue.png`,
-          link: {
-            mobileWebUrl: shareUrl,
-            webUrl: shareUrl,
-          },
-        },
-        buttons: [
-          {
-            title: "계산 결과 보기",
-            link: {
-              mobileWebUrl: shareUrl,
-              webUrl: shareUrl,
-            },
-          },
-          {
-            title: "나도 계산하기",
-            link: {
-              mobileWebUrl: window.location.origin,
-              webUrl: window.location.origin,
-            },
-          },
-        ],
-      })
-      console.log("✅ 카카오톡 공유 성공")
-    } catch (error) {
-      console.error("❌ 카카오톡 공유 실패:", error)
-
-      // 에러 코드별 상세 메시지
-      let errorMessage = "카카오톡 공유에 실패했습니다."
-      if (error && typeof error === "object" && "code" in error) {
-        switch (error.code) {
-          case -777:
-            errorMessage = "카카오톡이 설치되지 않았습니다."
-            break
-          case -301:
-            errorMessage = "사용자가 공유를 취소했습니다."
-            break
-          case 5001:
-            errorMessage = "도메인이 등록되지 않았거나 이미지 접근에 문제가 있습니다."
-            break
-          default:
-            errorMessage = `카카오톡 공유 오류 (코드: ${error.code})`
-        }
-      }
-
-      alert(`${errorMessage} 링크를 복사합니다.`)
-      handleCopyLink()
-    }
-  }
-
   const consultationCalculationData = calculationData
     ? {
         totalAssets: calculationData.calculationResult.totalAssets || 0,
@@ -533,14 +464,6 @@ export default function ResultPage() {
                   <Button
                     variant="ghost"
                     className="w-full justify-start text-left hover:bg-gray-50"
-                    onClick={handleKakaoShare}
-                  >
-                    <MessageCircle className="w-4 h-4 mr-2" />
-                    카카오톡 공유
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start text-left hover:bg-gray-50"
                     onClick={handleCopyLink}
                   >
                     <Copy className="w-4 h-4 mr-2" />
@@ -554,10 +477,6 @@ export default function ResultPage() {
                     <Share2 className="w-4 h-4 mr-2" />
                     공유하기
                   </Button>
-                </div>
-                <div className="px-3 py-2 border-t border-gray-100">
-                  <p className="text-xs text-gray-500">현재 도메인: {window.location.hostname}</p>
-                  <p className="text-xs text-gray-500">Kakao SDK: {kakaoReady ? "준비완료" : "로딩중"}</p>
                 </div>
               </div>
             )}
