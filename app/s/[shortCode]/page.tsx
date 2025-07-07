@@ -19,11 +19,6 @@ export default function ShortUrlRedirectPage() {
 
   const shortCode = params.shortCode as string
 
-  // 퓨니코드를 한글 도메인으로 변환하는 함수
-  const getKoreanDomain = (url: string) => {
-    return `https://상속세더봄.com/s/${shortCode}`
-  }
-
   useEffect(() => {
     const fetchOriginalUrl = async () => {
       try {
@@ -247,7 +242,7 @@ export default function ShortUrlRedirectPage() {
                       24시간 후 자동 만료
                     </div>
                     <p className="text-xs text-gray-400">
-                      🔗 {getKoreanDomain()}/s/{shortCode}
+                      🔗 {window.location.hostname}/s/{shortCode}
                     </p>
                   </div>
                 </>
