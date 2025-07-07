@@ -158,23 +158,33 @@ export default function ResultPage() {
     try {
       const response = await fetch("/api/shorten", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ originalUrl }),
       })
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || "URL 단축 실패")
+      const contentType = response.headers.get("content-type") || ""
+
+      // 1) 성공 케이스 ─ 반드시 JSON
+      if (response.ok) {
+        if (!contentType.includes("application/json")) {
+          throw new Error("서버가 JSON을 반환하지 않았습니다.")
+        }
+        const data = (await response.json()) as { shortUrl: string }
+        console.log("✅ URL 단축 성공:", data)
+        return data.shortUrl
       }
 
-      const data = await response.json()
-      console.log("✅ URL 단축 성공:", data)
-      return data.shortUrl
+      // 2) 오류 케이스 ─ 내용이 JSON이면 파싱, 아니면 text
+      if (contentType.includes("application/json")) {
+        const errorJson = await response.json()
+        throw new Error(errorJson.error ?? "URL 단축 실패")
+      } else {
+        const errorText = await response.text()
+        throw new Error(errorText || "URL 단축 실패")
+      }
     } catch (error) {
       console.error("❌ URL 단축 오류:", error)
-      return originalUrl // 실패 시 원본 URL 반환
+      return originalUrl // 실패 시 원본 URL 그대로 반환
     }
   }
 
