@@ -23,11 +23,38 @@ export default function ShortUrlRedirectPage() {
     const fetchOriginalUrl = async () => {
       try {
         setIsLoading(true)
+
         const response = await fetch(`/api/shorten?code=${shortCode}`)
+
+        // 응답 상태 확인
+        if (!response.ok) {
+          // JSON 응답인지 확인
+          const contentType = response.headers.get("content-type")
+          if (contentType?.includes("application/json")) {
+            const data = await response.json()
+            setError(data.error || "존재하지 않거나 만료된 링크입니다.")
+          } else {
+            // JSON이 아닌 응답 (HTML 오류 페이지 등)
+            const text = await response.text()
+            console.error("Non-JSON response:", text)
+            setError("서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.")
+          }
+          return
+        }
+
+        // 성공 응답 처리
+        const contentType = response.headers.get("content-type")
+        if (!contentType?.includes("application/json")) {
+          const text = await response.text()
+          console.error("Expected JSON, got:", text)
+          setError("서버 응답 형식이 올바르지 않습니다.")
+          return
+        }
+
         const data = await response.json()
 
-        if (!response.ok) {
-          setError(data.error || "존재하지 않거나 만료된 링크입니다.")
+        if (!data.originalUrl) {
+          setError("링크 데이터가 올바르지 않습니다.")
           return
         }
 
@@ -35,7 +62,14 @@ export default function ShortUrlRedirectPage() {
         console.log(`🔗 단축 링크 해석: ${shortCode} -> ${data.originalUrl}`)
       } catch (error) {
         console.error("링크 조회 오류:", error)
-        setError("링크를 불러오는 중 오류가 발생했습니다.")
+
+        if (error instanceof SyntaxError && error.message.includes("JSON")) {
+          setError("서버에서 올바르지 않은 응답을 받았습니다.")
+        } else if (error instanceof TypeError && error.message.includes("fetch")) {
+          setError("네트워크 연결을 확인해주세요.")
+        } else {
+          setError("링크를 불러오는 중 오류가 발생했습니다.")
+        }
       } finally {
         setIsLoading(false)
       }
