@@ -18,23 +18,6 @@ function generateShortCode(): string {
   return result
 }
 
-// 퓨니코드를 한글 도메인으로 변환하는 함수
-function convertToKoreanDomain(url: string): string {
-  try {
-    const urlObj = new URL(url)
-
-    // 퓨니코드 도메인을 한글로 변환
-    if (urlObj.hostname === "xn--9m1bt7p83cvnvn.com") {
-      urlObj.hostname = "상속세더봄.com"
-    }
-
-    return urlObj.toString()
-  } catch (error) {
-    console.warn("도메인 변환 실패:", error)
-    return url
-  }
-}
-
 // Redis 명령 실행 함수
 async function executeRedisCommand(command: string[]): Promise<any> {
   if (!UPSTASH_REDIS_REST_URL || !UPSTASH_REDIS_REST_TOKEN) {
@@ -94,13 +77,11 @@ export async function POST(request: NextRequest) {
     const existingCode = await executeRedisCommand(["GET", `url:${originalUrl}`])
 
     if (existingCode) {
-      const shortUrl = `${request.nextUrl.origin}/s/${existingCode}`
-      const koreanShortUrl = convertToKoreanDomain(shortUrl)
-
-      console.log(`🔄 기존 단축 URL 재사용: ${originalUrl} -> ${koreanShortUrl}`)
+      const shortUrl = `https://상속세더봄.com/s/${existingCode}`
+      console.log(`🔄 기존 단축 URL 재사용: ${originalUrl} -> ${shortUrl}`)
 
       return NextResponse.json({
-        shortUrl: koreanShortUrl,
+        shortUrl,
         shortCode: existingCode,
         originalUrl,
         isExisting: true,
@@ -138,13 +119,12 @@ export async function POST(request: NextRequest) {
       executeRedisCommand(["SETEX", `url:${originalUrl}`, ttl, shortCode]),
     ])
 
-    const shortUrl = `${request.nextUrl.origin}/s/${shortCode}`
-    const koreanShortUrl = convertToKoreanDomain(shortUrl)
+    const shortUrl = `https://상속세더봄.com/s/${shortCode}`
 
-    console.log(`✅ URL 단축 성공: ${originalUrl} -> ${koreanShortUrl}`)
+    console.log(`✅ URL 단축 성공: ${originalUrl} -> ${shortUrl}`)
 
     return NextResponse.json({
-      shortUrl: koreanShortUrl,
+      shortUrl,
       shortCode,
       originalUrl,
       expiresIn: ttl,
