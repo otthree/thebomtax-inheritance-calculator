@@ -1,33 +1,11 @@
 import { type NextRequest, NextResponse } from "next/server"
 
-// Upstash Redis 설정
-// const redis = new Redis({
-//   url: process.env.KV_REST_API_URL!,
-//   token: process.env.KV_REST_API_TOKEN!,
-// })
+// Upstash Redis REST API 설정
+const UPSTASH_REDIS_REST_URL = process.env.KV_REST_API_URL
+const UPSTASH_REDIS_REST_TOKEN = process.env.KV_REST_API_TOKEN
 
-const executeRedisCommand = async (command: string[]) => {
-  const url = `${process.env.KV_REST_API_URL}/`
-  const token = process.env.KV_REST_API_TOKEN
-
-  if (!token) {
-    console.warn("KV_REST_API_TOKEN is not defined")
-    return null
-  }
-
-  const res = await fetch(url + command.map(encodeURIComponent).join("/"), {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-    cache: "no-store",
-  })
-
-  const body = await res.json()
-  if (body.error) {
-    throw new Error(`${body.error}`)
-  }
-
-  return body.result
+if (!UPSTASH_REDIS_REST_URL || !UPSTASH_REDIS_REST_TOKEN) {
+  console.error("❌ Upstash Redis 환경변수가 설정되지 않았습니다.")
 }
 
 // 단축 코드 생성 함수
@@ -40,16 +18,51 @@ function generateShortCode(): string {
   return result
 }
 
+// Redis 명령 실행 함수
+async function executeRedisCommand(command: string[]): Promise<any> {
+  if (!UPSTASH_REDIS_REST_URL || !UPSTASH_REDIS_REST_TOKEN) {
+    throw new Error("Redis 설정이 누락되었습니다.")
+  }
+
+  const response = await fetch(`${UPSTASH_REDIS_REST_URL}/pipeline`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${UPSTASH_REDIS_REST_TOKEN}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify([command]),
+  })
+
+  if (!response.ok) {
+    const errorText = await response.text()
+    console.error("Redis API 오류:", errorText)
+    throw new Error(`Redis API 오류: ${response.status}`)
+  }
+
+  const results = await response.json()
+  return results[0]?.result
+}
+
 // POST: URL 단축
 export async function POST(request: NextRequest) {
   try {
-    if (request.headers.get("content-type") !== "application/json") {
+    const contentType = request.headers.get("content-type") || ""
+
+    if (!contentType.includes("application/json")) {
       return NextResponse.json({ error: "Content-Type이 application/json이어야 합니다." }, { status: 400 })
     }
 
-    const { originalUrl } = (await request.json()) as { originalUrl?: string }
+    let body
+    try {
+      body = await request.json()
+    } catch (parseError) {
+      console.error("JSON 파싱 오류:", parseError)
+      return NextResponse.json({ error: "잘못된 JSON 형식입니다." }, { status: 400 })
+    }
 
-    if (!originalUrl) {
+    const { originalUrl } = body
+
+    if (!originalUrl || typeof originalUrl !== "string") {
       return NextResponse.json({ error: "originalUrl이 필요합니다." }, { status: 400 })
     }
 
@@ -60,41 +73,72 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "유효하지 않은 URL입니다." }, { status: 400 })
     }
 
-    /* 기존 단축 URL 재사용 여부 확인 */
+    // 기존 단축 URL 확인
     const existingCode = await executeRedisCommand(["GET", `url:${originalUrl}`])
+
     if (existingCode) {
       const shortUrl = `https://상속세더봄.com/s/${existingCode}`
-      return NextResponse.json({ shortUrl, shortCode: existingCode, originalUrl, isExisting: true })
+      console.log(`🔄 기존 단축 URL 재사용: ${originalUrl} -> ${shortUrl}`)
+
+      return NextResponse.json({
+        shortUrl,
+        shortCode: existingCode,
+        originalUrl,
+        isExisting: true,
+      })
     }
 
-    /* 새 단축 코드 생성 (중복 방지) */
-    let shortCode = generateShortCode()
-    let tries = 1
-    while (await executeRedisCommand(["EXISTS", `short:${shortCode}`])) {
-      if (tries++ > 10) {
+    // 새 단축 코드 생성 (중복 방지)
+    let shortCode: string
+    let attempts = 0
+    const maxAttempts = 10
+
+    do {
+      shortCode = generateShortCode()
+      attempts++
+
+      if (attempts > maxAttempts) {
         return NextResponse.json({ error: "단축 코드 생성에 실패했습니다." }, { status: 500 })
       }
-      shortCode = generateShortCode()
-    }
+    } while (await executeRedisCommand(["EXISTS", `short:${shortCode}`]))
 
-    /* Redis 저장 (24h TTL) — JSON 문자열로 저장해야 나중에 parse 가능 */
-    const payload = JSON.stringify({
-      originalUrl,
-      createdAt: new Date().toISOString(),
-      clicks: 0,
-    })
-    const ttl = 60 * 60 * 24
+    // Redis에 데이터 저장 (24시간 TTL)
+    const ttl = 24 * 60 * 60 // 24시간
 
     await Promise.all([
-      executeRedisCommand(["SETEX", `short:${shortCode}`, ttl, payload]),
+      executeRedisCommand([
+        "SETEX",
+        `short:${shortCode}`,
+        ttl,
+        JSON.stringify({
+          originalUrl,
+          createdAt: new Date().toISOString(),
+          clicks: 0,
+        }),
+      ]),
       executeRedisCommand(["SETEX", `url:${originalUrl}`, ttl, shortCode]),
     ])
 
     const shortUrl = `https://상속세더봄.com/s/${shortCode}`
-    return NextResponse.json({ shortUrl, shortCode, originalUrl, expiresIn: ttl })
-  } catch (err) {
-    console.error("URL 단축 오류:", err)
-    return NextResponse.json({ error: "서버 오류가 발생했습니다." }, { status: 500 })
+
+    console.log(`✅ URL 단축 성공: ${originalUrl} -> ${shortUrl}`)
+
+    return NextResponse.json({
+      shortUrl,
+      shortCode,
+      originalUrl,
+      expiresIn: ttl,
+    })
+  } catch (error) {
+    console.error("URL 단축 오류:", error)
+
+    return NextResponse.json(
+      {
+        error: error instanceof Error ? error.message : "서버 오류가 발생했습니다.",
+        details: process.env.NODE_ENV === "development" ? String(error) : undefined,
+      },
+      { status: 500 },
+    )
   }
 }
 
@@ -124,7 +168,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 클릭 수 증가
-    await executeRedisCommand(["HINCRBY", `short:${shortCode}`, "clicks", "1"])
+    await executeRedisCommand(["HINCRBY", `short:${shortCode}`, "clicks", 1])
 
     console.log(`🔗 단축 URL 조회: ${shortCode} -> ${data.originalUrl}`)
 

@@ -1,27 +1,15 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ArrowRight, Clock, AlertCircle } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
-import { Redis } from "@upstash/redis"
 
-const redis = new Redis({
-  url: process.env.KV_REST_API_URL!,
-  token: process.env.KV_REST_API_TOKEN!,
-})
-
-interface Props {
-  params: {
-    shortCode: string
-  }
-}
-
-export default async function ShortUrlRedirectPage({ params }: Props) {
-  const { shortCode } = params
+export default function ShortUrlRedirectPage() {
+  const params = useParams()
   const router = useRouter()
   const [countdown, setCountdown] = useState(2)
   const [originalUrl, setOriginalUrl] = useState<string | null>(null)
@@ -29,26 +17,59 @@ export default async function ShortUrlRedirectPage({ params }: Props) {
   const [isRedirecting, setIsRedirecting] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
 
+  const shortCode = params.shortCode as string
+
   useEffect(() => {
     const fetchOriginalUrl = async () => {
       try {
         setIsLoading(true)
 
-        // Redis에서 원본 URL 조회
-        const url = await redis.get(`short:${shortCode}`)
+        const response = await fetch(`/api/shorten?code=${shortCode}`)
 
-        if (!url || typeof url !== "string") {
-          // 단축 URL이 존재하지 않거나 만료된 경우
-          setError("링크를 찾을 수 없습니다")
-          setIsLoading(false)
+        // 응답 상태 확인
+        if (!response.ok) {
+          // JSON 응답인지 확인
+          const contentType = response.headers.get("content-type")
+          if (contentType?.includes("application/json")) {
+            const data = await response.json()
+            setError(data.error || "존재하지 않거나 만료된 링크입니다.")
+          } else {
+            // JSON이 아닌 응답 (HTML 오류 페이지 등)
+            const text = await response.text()
+            console.error("Non-JSON response:", text)
+            setError("서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.")
+          }
           return
         }
 
-        setOriginalUrl(url)
-        console.log(`🔗 단축 링크 해석: ${shortCode} -> ${url}`)
+        // 성공 응답 처리
+        const contentType = response.headers.get("content-type")
+        if (!contentType?.includes("application/json")) {
+          const text = await response.text()
+          console.error("Expected JSON, got:", text)
+          setError("서버 응답 형식이 올바르지 않습니다.")
+          return
+        }
+
+        const data = await response.json()
+
+        if (!data.originalUrl) {
+          setError("링크 데이터가 올바르지 않습니다.")
+          return
+        }
+
+        setOriginalUrl(data.originalUrl)
+        console.log(`🔗 단축 링크 해석: ${shortCode} -> ${data.originalUrl}`)
       } catch (error) {
         console.error("링크 조회 오류:", error)
-        setError("링크를 불러오는 중 오류가 발생했습니다.")
+
+        if (error instanceof SyntaxError && error.message.includes("JSON")) {
+          setError("서버에서 올바르지 않은 응답을 받았습니다.")
+        } else if (error instanceof TypeError && error.message.includes("fetch")) {
+          setError("네트워크 연결을 확인해주세요.")
+        } else {
+          setError("링크를 불러오는 중 오류가 발생했습니다.")
+        }
       } finally {
         setIsLoading(false)
       }
