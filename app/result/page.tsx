@@ -92,8 +92,9 @@ export default function ResultPage() {
   const [showShareOptions, setShowShareOptions] = useState(false)
   const [kakaoReady, setKakaoReady] = useState(false)
 
-  // URL 파라미터에서 data 값 가져오기
+  // URL 파라미터에서 data 값 또는 share ID 가져오기
   const dataParam = searchParams.get("data")
+  const shareId = searchParams.get("s")
 
   // Kakao SDK 준비 상태 확인
   useEffect(() => {
@@ -121,8 +122,26 @@ export default function ResultPage() {
   }, [])
 
   useEffect(() => {
-    const loadCalculationData = () => {
-      // 1. 먼저 URL 파라미터 확인 (공유된 링크의 경우)
+    const loadCalculationData = async () => {
+      // 1. 먼저 단축 URL ID 확인 (새로운 공유 방식)
+      if (shareId) {
+        try {
+          const response = await fetch(`/api/share?id=${shareId}`)
+          if (response.ok) {
+            const result = await response.json()
+            console.log("단축 URL에서 데이터 로드:", result.data)
+            setCalculationData(result.data)
+            setLoading(false)
+            return
+          } else {
+            console.error("단축 URL 데이터 로드 실패:", response.status)
+          }
+        } catch (error) {
+          console.error("단축 URL 데이터 로드 오류:", error)
+        }
+      }
+
+      // 2. URL 파라미터 확인 (기존 공유 방식)
       if (dataParam) {
         try {
           const decoded = JSON.parse(decodeURIComponent(dataParam))
@@ -135,7 +154,7 @@ export default function ResultPage() {
         }
       }
 
-      // 2. localStorage에서 데이터 확인 (일반적인 계산 결과의 경우)
+      // 3. localStorage에서 데이터 확인 (일반적인 계산 결과의 경우)
       try {
         const saved = localStorage.getItem("inheritanceTaxCalculation")
         if (saved) {
@@ -149,13 +168,13 @@ export default function ResultPage() {
         console.error("localStorage 데이터 파싱 실패:", error)
       }
 
-      // 3. 데이터가 없으면 홈으로 리다이렉트
+      // 4. 데이터가 없으면 홈으로 리다이렉트
       console.log("계산 데이터를 찾을 수 없음, 홈으로 리다이렉트")
       router.replace("/")
     }
 
     loadCalculationData()
-  }, [dataParam, router])
+  }, [dataParam, shareId, router])
 
   const convertWonToKoreanAmount = (amount: number): string => {
     amount = amount / 10000
@@ -185,11 +204,33 @@ export default function ResultPage() {
     window.location.href = "/"
   }
 
-  const generateShareUrl = () => {
+  const generateShareUrl = async () => {
     if (!calculationData) return ""
 
-    const encodedData = encodeURIComponent(JSON.stringify(calculationData))
-    return `${window.location.origin}/result?data=${encodedData}`
+    try {
+      // 단축 URL 생성
+      const response = await fetch("/api/share", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(calculationData),
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        return `${window.location.origin}/result?s=${result.shortId}`
+      } else {
+        // 실패 시 기존 방식으로 폴백
+        const encodedData = encodeURIComponent(JSON.stringify(calculationData))
+        return `${window.location.origin}/result?data=${encodedData}`
+      }
+    } catch (error) {
+      console.error("단축 URL 생성 실패:", error)
+      // 실패 시 기존 방식으로 폴백
+      const encodedData = encodeURIComponent(JSON.stringify(calculationData))
+      return `${window.location.origin}/result?data=${encodedData}`
+    }
   }
 
   const handleCopyLink = async () => {
@@ -198,7 +239,7 @@ export default function ResultPage() {
     setIsSharing(true)
 
     try {
-      const shareUrl = generateShareUrl()
+      const shareUrl = await generateShareUrl()
       await navigator.clipboard.writeText(shareUrl)
 
       setShareButtonText("✅ 복사완료!")
@@ -220,7 +261,7 @@ export default function ResultPage() {
   const handleWebShare = async () => {
     if (!calculationData) return
 
-    const shareUrl = generateShareUrl()
+    const shareUrl = await generateShareUrl()
     const shareData = {
       title: "상속세 계산 결과",
       text: `상속세 계산 결과: ${convertWonToKoreanAmount(calculationData.calculationResult.finalTax * 10000)}`,
@@ -235,6 +276,73 @@ export default function ResultPage() {
       }
     } catch (error) {
       // 공유 실패 시 무시
+    }
+  }
+
+  const handleKakaoShare = async () => {
+    if (!calculationData) return
+
+    // Kakao SDK 준비 상태 확인
+    if (!kakaoReady) {
+      alert("카카오톡 SDK가 아직 준비되지 않았습니다. 잠시 후 다시 시도해주세요.")
+      return
+    }
+
+    const finalTaxAmount = convertWonToKoreanAmount(calculationData.calculationResult.finalTax * 10000)
+    const shareUrl = await generateShareUrl()
+
+    try {
+      window.Kakao.Share.sendDefault({
+        objectType: "feed",
+        content: {
+          title: "상속세 계산 결과 | 세무법인 더봄",
+          description: `예상되는 최종상속세는 ${finalTaxAmount}입니다.\n\n정확한 상속세 계산과 전문가 상담을 받아보세요.`,
+          imageUrl: `${window.location.origin}/logo-deobom-blue.png`,
+          link: {
+            mobileWebUrl: shareUrl,
+            webUrl: shareUrl,
+          },
+        },
+        buttons: [
+          {
+            title: "계산 결과 보기",
+            link: {
+              mobileWebUrl: shareUrl,
+              webUrl: shareUrl,
+            },
+          },
+          {
+            title: "나도 계산하기",
+            link: {
+              mobileWebUrl: window.location.origin,
+              webUrl: window.location.origin,
+            },
+          },
+        ],
+      })
+    } catch (error) {
+      console.error("카카오톡 공유 실패:", error)
+
+      // 에러 코드별 상세 메시지
+      let errorMessage = "카카오톡 공유에 실패했습니다."
+      if (error && typeof error === "object" && "code" in error) {
+        switch (error.code) {
+          case -777:
+            errorMessage = "카카오톡이 설치되지 않았습니다."
+            break
+          case -301:
+            errorMessage = "사용자가 공유를 취소했습니다."
+            break
+          case 5001:
+            errorMessage = "도메인이 등록되지 않았거나 이미지 접근에 문제가 있습니다."
+            break
+          default:
+            errorMessage = `카카오톡 공유 오류 (코드: ${error.code})`
+        }
+      }
+
+      alert(`${errorMessage} 링크를 복사합니다.`)
+      handleCopyLink()
     }
   }
 
@@ -464,6 +572,14 @@ export default function ResultPage() {
                   <Button
                     variant="ghost"
                     className="w-full justify-start text-left hover:bg-gray-50"
+                    onClick={handleKakaoShare}
+                  >
+                    <MessageCircle className="w-4 h-4 mr-2" />
+                    카카오톡 공유
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start text-left hover:bg-gray-50"
                     onClick={handleCopyLink}
                   >
                     <Copy className="w-4 h-4 mr-2" />
@@ -478,10 +594,23 @@ export default function ResultPage() {
                     공유하기
                   </Button>
                 </div>
+                <div className="px-3 py-2 border-t border-gray-100">
+                  <p className="text-xs text-gray-500">{shareId ? "단축 URL로 공유됨" : "일반 URL로 공유됨"}</p>
+                </div>
               </div>
             )}
           </div>
         </div>
+
+        {shareId && (
+          <Alert className="mb-8 bg-green-50 border-green-200">
+            <Share2 className="h-4 w-4 text-green-600" />
+            <AlertDescription className="text-green-800">
+              <strong>🔗 단축 URL로 공유됨</strong>
+              <br />이 페이지는 단축 URL을 통해 공유된 계산 결과입니다. (24시간 유효)
+            </AlertDescription>
+          </Alert>
+        )}
 
         {searchParams.get("data") && (
           <Alert className="mb-8 bg-blue-50 border-blue-200">

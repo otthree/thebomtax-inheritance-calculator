@@ -10,12 +10,11 @@ const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
   title: "상속세 계산기 | 세무법인 더봄",
-  description:
-    "2025년 기준 상속세 계산기. 전문 세무사 검증, 무료 서비스. 정확한 상속세 계산과 전문가 상담을 받아보세요.",
+  description: "2025년 기준 상속세를 정확하게 계산해보세요. 전문 세무사가 검증한 무료 상속세 계산기입니다.",
   keywords: "상속세, 상속세계산기, 세무법인, 더봄, 상속세율, 상속공제",
   openGraph: {
     title: "상속세 계산기 | 세무법인 더봄",
-    description: "2025년 기준 상속세 계산기. 전문 세무사 검증, 무료 서비스.",
+    description: "2025년 기준 상속세를 정확하게 계산해보세요. 전문 세무사가 검증한 무료 상속세 계산기입니다.",
     type: "website",
     locale: "ko_KR",
   },
@@ -42,7 +41,29 @@ export default function RootLayout({
           {children}
           <Toaster />
         </ThemeProvider>
-        
+        <Script id="kakao-init" strategy="afterInteractive">
+          {`
+            if (typeof window !== 'undefined' && window.Kakao) {
+              try {
+                if (!window.Kakao.isInitialized()) {
+                  const kakaoKey = '${process.env.NEXT_PUBLIC_KAKAO_APP_KEY}';
+                  if (kakaoKey && kakaoKey !== 'undefined') {
+                    window.Kakao.init(kakaoKey);
+                    console.log('✅ Kakao SDK 초기화 완료:', window.Kakao.isInitialized());
+                  } else {
+                    console.warn('⚠️ NEXT_PUBLIC_KAKAO_APP_KEY가 설정되지 않았습니다.');
+                  }
+                } else {
+                  console.log('✅ Kakao SDK 이미 초기화됨');
+                }
+              } catch (error) {
+                console.error('❌ Kakao SDK 초기화 실패:', error);
+              }
+            } else {
+              console.warn('⚠️ Kakao SDK를 찾을 수 없습니다.');
+            }
+          `}
+        </Script>
       </body>
     </html>
   )
