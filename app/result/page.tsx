@@ -5,18 +5,12 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { AlertTriangle, Share2, Copy, Phone, MessageCircle } from "lucide-react"
+import { AlertTriangle, Share2, Copy, Phone } from 'lucide-react'
 import Image from "next/image"
 import Link from "next/link"
 import ConsultationModal from "@/components/consultation-modal"
 import { Footer } from "@/components/footer"
-
-// Kakao SDK 타입 선언
-declare global {
-  interface Window {
-    Kakao: any
-  }
-}
+import Content from "@/components/content" // Declare the Content variable
 
 interface FormData {
   realEstate: string
@@ -90,36 +84,10 @@ export default function ResultPage() {
   const [shareButtonText, setShareButtonText] = useState("📤 공유")
   const [isSharing, setIsSharing] = useState(false)
   const [showShareOptions, setShowShareOptions] = useState(false)
-  const [kakaoReady, setKakaoReady] = useState(false)
 
   // URL 파라미터에서 data 값 또는 share ID 가져오기
   const dataParam = searchParams.get("data")
   const shareId = searchParams.get("s")
-
-  // Kakao SDK 준비 상태 확인
-  useEffect(() => {
-    let checkCount = 0
-    const maxChecks = 50 // 최대 5초 대기 (100ms * 50)
-
-    const checkKakaoReady = () => {
-      checkCount++
-
-      if (typeof window !== "undefined" && window.Kakao && window.Kakao.isInitialized()) {
-        setKakaoReady(true)
-        console.log("✅ Kakao SDK 준비 완료")
-        return
-      }
-
-      if (checkCount < maxChecks) {
-        setTimeout(checkKakaoReady, 100)
-      } else {
-        console.log("❌ Kakao SDK 초기화 시간 초과")
-        setKakaoReady(false)
-      }
-    }
-
-    checkKakaoReady()
-  }, [])
 
   useEffect(() => {
     const loadCalculationData = async () => {
@@ -276,73 +244,6 @@ export default function ResultPage() {
       }
     } catch (error) {
       // 공유 실패 시 무시
-    }
-  }
-
-  const handleKakaoShare = async () => {
-    if (!calculationData) return
-
-    // Kakao SDK 준비 상태 확인
-    if (!kakaoReady) {
-      alert("카카오톡 SDK가 아직 준비되지 않았습니다. 잠시 후 다시 시도해주세요.")
-      return
-    }
-
-    const finalTaxAmount = convertWonToKoreanAmount(calculationData.calculationResult.finalTax * 10000)
-    const shareUrl = await generateShareUrl()
-
-    try {
-      window.Kakao.Share.sendDefault({
-        objectType: "feed",
-        content: {
-          title: "상속세 계산 결과 | 세무법인 더봄",
-          description: `예상되는 최종상속세는 ${finalTaxAmount}입니다.\n\n정확한 상속세 계산과 전문가 상담을 받아보세요.`,
-          imageUrl: `${window.location.origin}/logo-deobom-blue.png`,
-          link: {
-            mobileWebUrl: shareUrl,
-            webUrl: shareUrl,
-          },
-        },
-        buttons: [
-          {
-            title: "계산 결과 보기",
-            link: {
-              mobileWebUrl: shareUrl,
-              webUrl: shareUrl,
-            },
-          },
-          {
-            title: "나도 계산하기",
-            link: {
-              mobileWebUrl: window.location.origin,
-              webUrl: window.location.origin,
-            },
-          },
-        ],
-      })
-    } catch (error) {
-      console.error("카카오톡 공유 실패:", error)
-
-      // 에러 코드별 상세 메시지
-      let errorMessage = "카카오톡 공유에 실패했습니다."
-      if (error && typeof error === "object" && "code" in error) {
-        switch (error.code) {
-          case -777:
-            errorMessage = "카카오톡이 설치되지 않았습니다."
-            break
-          case -301:
-            errorMessage = "사용자가 공유를 취소했습니다."
-            break
-          case 5001:
-            errorMessage = "도메인이 등록되지 않았거나 이미지 접근에 문제가 있습니다."
-            break
-          default:
-            errorMessage = `카카오톡 공유 오류 (코드: ${error.code})`
-        }
-      }
-
-      alert(`${errorMessage} 링크를 복사합니다.`)
-      handleCopyLink()
     }
   }
 
@@ -572,14 +473,6 @@ export default function ResultPage() {
                   <Button
                     variant="ghost"
                     className="w-full justify-start text-left hover:bg-gray-50"
-                    onClick={handleKakaoShare}
-                  >
-                    <MessageCircle className="w-4 h-4 mr-2" />
-                    카카오톡 공유
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start text-left hover:bg-gray-50"
                     onClick={handleCopyLink}
                   >
                     <Copy className="w-4 h-4 mr-2" />
@@ -661,6 +554,7 @@ export default function ResultPage() {
         onClose={() => setIsConsultationModalOpen(false)}
         calculationData={consultationCalculationData}
       />
+      <Content /> {/* Insert the Content component here */}
 
       <Footer />
     </div>
