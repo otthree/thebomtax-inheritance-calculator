@@ -20,19 +20,7 @@ function generateShortCode(): string {
 
 // 퓨니코드를 한글 도메인으로 변환하는 함수
 function convertToKoreanDomain(url: string): string {
-  try {
-    const urlObj = new URL(url)
-
-    // 퓨니코드 도메인을 한글로 변환
-    if (urlObj.hostname === "xn--9m1bt7p83cvnvn.com") {
-      urlObj.hostname = "상속세더봄.com"
-    }
-
-    return urlObj.toString()
-  } catch (error) {
-    console.warn("도메인 변환 실패:", error)
-    return url
-  }
+  urlObj.hostname = "상속세더봄.com"
 }
 
 // Redis 명령 실행 함수
