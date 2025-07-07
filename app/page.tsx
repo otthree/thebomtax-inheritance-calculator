@@ -8,18 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import {
-  Calculator,
-  FileText,
-  Zap,
-  TrendingUp,
-  DollarSign,
-  BarChart3,
-  AlertTriangle,
-  Phone,
-  Plus,
-  X,
-} from "lucide-react"
+import { AlertTriangle, Phone, Plus, X } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import ConsultationModal from "@/components/consultation-modal"
@@ -431,6 +420,11 @@ export default function InheritanceTaxCalculator() {
     }
   }
 
+  const formatNumber = (num: number) => {
+    const rounded = Math.round(num / 10000)
+    return rounded.toLocaleString("ko-KR")
+  }
+
   const nextStep = () => {
     if (currentStep < 4) {
       setCurrentStep(currentStep + 1)
@@ -602,7 +596,7 @@ export default function InheritanceTaxCalculator() {
                 <CardContent className="space-y-8">
                   <div>
                     <h3 className="text-base font-semibold mb-4 text-slate-900">부동산</h3>
-
+                    <p className="text-sm text-gray-600 mb-4">주거용, 상업용, 토지 등 부동산 자산을 입력해주세요</p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
                         <Label htmlFor="realEstate" className="text-sm font-medium">
@@ -641,7 +635,7 @@ export default function InheritanceTaxCalculator() {
 
                   <div>
                     <h3 className="text-base font-semibold mb-4 text-slate-900">금융자산</h3>
-
+                    <p className="text-sm text-gray-600 mb-4">예금, 주식, 펀드 등 금융자산을 입력해주세요</p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
                         <Label htmlFor="deposit" className="text-sm font-medium">
@@ -1372,113 +1366,6 @@ export default function InheritanceTaxCalculator() {
                 </div>
               </CardContent>
             </Card>
-          </div>
-        </div>
-
-        <div className="mt-16">
-          <h2 className="text-2xl font-bold text-center mb-12">상속세 계산 안내</h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <FileText className="w-8 h-8 text-slate-700" />
-              </div>
-              <h3 className="font-semibold mb-2">단계별 입력</h3>
-              <p className="text-sm text-gray-600">기본 정보부터 차근차근 입력하여 정확한 계산 결과를 얻으세요</p>
-            </div>
-
-            <div className="text-center">
-              <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Zap className="w-8 h-8 text-slate-700" />
-              </div>
-              <h3 className="font-semibold mb-2">실시간 계산</h3>
-              <p className="text-sm text-gray-600">입력하는 즉시 계산 결과를 확인할 수 있습니다</p>
-            </div>
-
-            <div className="text-center">
-              <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <BarChart3 className="w-8 h-8 text-slate-700" />
-              </div>
-              <h3 className="font-semibold mb-2">정확한 결과</h3>
-              <p className="text-sm text-gray-600">2025년 기준 상속세율과 공제액 적용한 정확한 계산</p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <DollarSign className="w-8 h-8 text-slate-700" />
-              </div>
-              <h3 className="font-semibold mb-4">주요 공제</h3>
-              <div className="text-left space-y-2 text-sm">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-slate-600 rounded-full"></div>
-                  <span>일괄공제: 5억원</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-slate-600 rounded-full"></div>
-                  <span>배우자공제: 최소 5억원</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-slate-600 rounded-full"></div>
-                  <span>동거주택 상속공제: 최대 6억원</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-slate-600 rounded-full"></div>
-                  <span>금융자산 상속공제: 순금융자산의 20% (최대 2억원)</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="text-center">
-              <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Calculator className="w-8 h-8 text-slate-700" />
-              </div>
-              <h3 className="font-semibold mb-4">계산 방법</h3>
-              <div className="text-left space-y-2 text-sm">
-                <div className="flex items-center gap-2">
-                  <span className="bg-slate-100 text-slate-800 px-2 py-1 rounded text-xs">1</span>
-                  <span>총 재산가액 계산</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="bg-slate-100 text-slate-800 px-2 py-1 rounded text-xs">2</span>
-                  <span>총 공제액 계산</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="bg-slate-100 text-slate-800 px-2 py-1 rounded text-xs">3</span>
-                  <span>과세표준 × 세율 - 누진공제</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="text-center">
-              <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <TrendingUp className="w-8 h-8 text-slate-700" />
-              </div>
-              <h3 className="font-semibold mb-4">세율 구간</h3>
-              <div className="text-left space-y-2 text-sm">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-slate-600 rounded-full"></div>
-                  <span>1억원 이하: 10%</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-slate-600 rounded-full"></div>
-                  <span>5억원 이하: 20%</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-slate-600 rounded-full"></div>
-                  <span>10억원 이하: 30%</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-slate-600 rounded-full"></div>
-                  <span>30억원 이하: 40%</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-slate-600 rounded-full"></div>
-                  <span>30억원 초과: 50%</span>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
