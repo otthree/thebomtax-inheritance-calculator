@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { AlertTriangle, Phone, Plus, X } from "lucide-react"
+import { AlertTriangle, Plus, X } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import ConsultationModal from "@/components/consultation-modal"
@@ -1368,16 +1368,6 @@ export default function InheritanceTaxCalculator() {
             </Card>
           </div>
         </div>
-      </div>
-
-      <div className="md:hidden fixed bottom-6 right-6 z-50">
-        <a
-          href="tel:02-336-0309"
-          className="w-14 h-14 bg-slate-800 hover:bg-slate-900 text-white rounded-full flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-110"
-          aria-label="전화걸기"
-        >
-          <Phone className="w-6 h-6" />
-        </a>
       </div>
 
       <ConsultationModal
