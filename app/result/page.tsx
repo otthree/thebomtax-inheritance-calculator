@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { AlertTriangle, Share2, Copy, Phone } from "lucide-react"
+import { AlertTriangle, Share2, Copy, Phone, Clock } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import ConsultationModal from "@/components/consultation-modal"
@@ -153,7 +153,7 @@ export default function ResultPage() {
     return `${window.location.origin}/result?data=${encodedData}`
   }
 
-  // URL 단축 함수
+  // Upstash Redis를 사용한 URL 단축 함수
   const shortenUrl = async (originalUrl: string): Promise<string> => {
     try {
       const response = await fetch("/api/shorten", {
@@ -165,13 +165,15 @@ export default function ResultPage() {
       })
 
       if (!response.ok) {
-        throw new Error("URL 단축 실패")
+        const errorData = await response.json()
+        throw new Error(errorData.error || "URL 단축 실패")
       }
 
       const data = await response.json()
+      console.log("✅ URL 단축 성공:", data)
       return data.shortUrl
     } catch (error) {
-      console.error("URL 단축 오류:", error)
+      console.error("❌ URL 단축 오류:", error)
       return originalUrl // 실패 시 원본 URL 반환
     }
   }
@@ -482,7 +484,10 @@ export default function ResultPage() {
                   </Button>
                 </div>
                 <div className="px-3 py-2 border-t border-gray-100">
-                  <p className="text-xs text-gray-500">🔗 자동으로 URL이 단축됩니다</p>
+                  <div className="flex items-center text-xs text-gray-500">
+                    <Clock className="w-3 h-3 mr-1" />
+                    24시간 후 자동 만료
+                  </div>
                 </div>
               </div>
             )}
