@@ -1,77 +1,26 @@
 import { type NextRequest, NextResponse } from "next/server"
 
 /* --------------------------------------------------------
- * 환경 변수 확인 및 fallback 처리
- * ------------------------------------------------------ */
-const UPSTASH_URL = process.env.KV_REST_API_URL || process.env.KV_REST_API_URL
-const UPSTASH_TOKEN = process.env.KV_REST_API_TOKEN || process.env.KV_REST_API_TOKEN
-
-console.log("🔍 환경 변수 확인:")
-console.log("- KV_REST_API_URL:", process.env.KV_REST_API_URL ? "✅ 설정됨" : "❌ 없음")
-console.log("- KV_REST_API_TOKEN:", process.env.KV_REST_API_TOKEN ? "✅ 설정됨" : "❌ 없음")
-console.log("- UPSTASH_REDIS_REST_URL:", process.env.KV_REST_API_URL ? "✅ 설정됨" : "❌ 없음")
-console.log("- UPSTASH_REDIS_REST_TOKEN:", process.env.KV_REST_API_TOKEN ? "✅ 설정됨" : "❌ 없음")
-
-/* --------------------------------------------------------
- * 메모리 기반 fallback 저장소
- * ------------------------------------------------------ */
-const memoryStore = new Map<string, { data: any; expires: number }>()
-
-function cleanupExpired() {
-  const now = Date.now()
-  for (const [key, value] of memoryStore.entries()) {
-    if (value.expires < now) {
-      memoryStore.delete(key)
-    }
-  }
-}
-
-class MemoryStorage {
-  async set(key: string, value: unknown, ttlSeconds?: number) {
-    const expires = ttlSeconds ? Date.now() + ttlSeconds * 1000 : Date.now() + 24 * 60 * 60 * 1000
-    memoryStore.set(key, { data: value, expires })
-    cleanupExpired()
-    return { result: "OK" }
-  }
-
-  async get(key: string) {
-    cleanupExpired()
-    const item = memoryStore.get(key)
-    if (!item || item.expires < Date.now()) {
-      return null
-    }
-    return item.data
-  }
-
-  async incr(key: string) {
-    cleanupExpired()
-    const item = memoryStore.get(key)
-    const currentValue = item?.data || 0
-    const newValue = Number(currentValue) + 1
-    memoryStore.set(key, { data: newValue, expires: item?.expires || Date.now() + 24 * 60 * 60 * 1000 })
-    return { result: newValue }
-  }
-}
-
-/* --------------------------------------------------------
- * Upstash Redis 클라이언트
+ * Upstash Redis – lightweight REST helper
  * ------------------------------------------------------ */
 class UpstashRedis {
   private baseUrl: string
   private token: string
 
   constructor() {
-    if (!UPSTASH_URL || !UPSTASH_TOKEN) {
+    if (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN) {
       throw new Error("⚠️  Upstash 환경 변수가 누락되었습니다.")
     }
-    this.baseUrl = UPSTASH_URL
-    this.token = UPSTASH_TOKEN
+    this.baseUrl = process.env.KV_REST_API_URL
+    this.token = process.env.KV_REST_API_TOKEN
   }
 
+  /* URL-encode keys so that '/', ':' 등 특수 문자가 안전해집니다. */
   private encKey(key: string) {
     return encodeURIComponent(key)
   }
 
+  /* 문자열이 아니면 JSON 문자열로 직렬화 후 인코딩 */
   private encVal(val: unknown) {
     const str = typeof val === "string" ? val : JSON.stringify(val)
     return encodeURIComponent(str)
@@ -149,22 +98,12 @@ class UpstashRedis {
   }
 }
 
-/* --------------------------------------------------------
- * 저장소 초기화 (Redis 또는 Memory fallback)
- * ------------------------------------------------------ */
-let storage: UpstashRedis | MemoryStorage
+let redis: UpstashRedis
 
 try {
-  if (UPSTASH_URL && UPSTASH_TOKEN) {
-    storage = new UpstashRedis()
-    console.log("✅ Upstash Redis 클라이언트 초기화 성공")
-  } else {
-    storage = new MemoryStorage()
-    console.log("⚠️  Upstash 환경 변수 없음 - 메모리 저장소 사용")
-  }
+  redis = new UpstashRedis()
 } catch (error) {
-  console.error("❌ Redis 초기화 실패, 메모리 저장소로 fallback:", error)
-  storage = new MemoryStorage()
+  console.error("❌ Upstash Redis 초기화 실패:", error)
 }
 
 /* --------------------------------------------------------
@@ -188,6 +127,12 @@ function generateShortCode(): string {
  * ------------------------------------------------------ */
 export async function POST(request: NextRequest) {
   try {
+    // Redis 초기화 확인
+    if (!redis) {
+      console.error("❌ Redis 클라이언트가 초기화되지 않았습니다.")
+      return NextResponse.json({ error: "서버 설정 오류입니다. 관리자에게 문의하세요." }, { status: 500 })
+    }
+
     const body = await request.json().catch(() => ({}))
     const { originalUrl } = body
 
@@ -205,7 +150,7 @@ export async function POST(request: NextRequest) {
     /* 1) 이미 존재하는지 확인 (원본 URL ➞ 코드) */
     let existingCode: string | null = null
     try {
-      existingCode = await storage.get(`url:${originalUrl}`)
+      existingCode = await redis.get(`url:${originalUrl}`)
     } catch (error) {
       console.warn("기존 URL 조회 실패:", error)
       // 계속 진행
@@ -215,11 +160,9 @@ export async function POST(request: NextRequest) {
       const shortUrl = `${request.nextUrl.origin}/s/${existingCode}`
       return NextResponse.json({
         shortUrl,
-        shortCode: existingCode,
-        originalUrl,
+        code: existingCode,
         cached: true,
         expiresIn: "24시간",
-        storage: storage instanceof UpstashRedis ? "redis" : "memory",
       })
     }
 
@@ -230,7 +173,7 @@ export async function POST(request: NextRequest) {
 
     while (attempts < maxAttempts) {
       try {
-        const existing = await storage.get(`short:${shortCode}`)
+        const existing = await redis.get(`short:${shortCode}`)
         if (!existing) break
         shortCode = generateShortCode()
         attempts++
@@ -250,23 +193,21 @@ export async function POST(request: NextRequest) {
     /* 3) 저장 – 24시간 TTL */
     try {
       await Promise.all([
-        storage.set(`short:${shortCode}`, urlData, TTL_24H),
-        storage.set(`url:${originalUrl}`, shortCode, TTL_24H),
-        storage.set(`clicks:${shortCode}`, 0, TTL_24H),
+        redis.set(`short:${shortCode}`, urlData, TTL_24H),
+        redis.set(`url:${originalUrl}`, shortCode, TTL_24H),
+        redis.set(`clicks:${shortCode}`, 0, TTL_24H),
       ])
 
       console.log(`✅ URL 단축 성공: ${originalUrl} -> ${shortUrl}`)
 
       return NextResponse.json({
         shortUrl,
-        shortCode,
-        originalUrl,
+        code: shortCode,
         expiresIn: "24시간",
         cached: false,
-        storage: storage instanceof UpstashRedis ? "redis" : "memory",
       })
     } catch (error) {
-      console.error("❌ 저장 실패:", error)
+      console.error("❌ Redis 저장 실패:", error)
       return NextResponse.json({ error: "URL 단축 저장에 실패했습니다. 잠시 후 다시 시도해주세요." }, { status: 500 })
     }
   } catch (err) {
@@ -280,18 +221,23 @@ export async function POST(request: NextRequest) {
  * ------------------------------------------------------ */
 export async function GET(request: NextRequest) {
   try {
+    // Redis 초기화 확인
+    if (!redis) {
+      console.error("❌ Redis 클라이언트가 초기화되지 않았습니다.")
+      return NextResponse.json({ error: "서버 설정 오류입니다." }, { status: 500 })
+    }
+
     const code = request.nextUrl.searchParams.get("code")
     if (!code) {
       return NextResponse.json({ error: "단축 코드가 필요합니다." }, { status: 400 })
     }
 
-    // 저장소에서 URL 데이터 조회
+    // Redis에서 URL 데이터 조회
     let encoded: string | null = null
     try {
-      const result = await storage.get(`short:${code}`)
-      encoded = typeof result === "string" ? result : result ? JSON.stringify(result) : null
+      encoded = await redis.get(`short:${code}`)
     } catch (error) {
-      console.error("❌ 저장소 조회 실패:", error)
+      console.error("❌ Redis 조회 실패:", error)
       return NextResponse.json({ error: "링크 조회 중 오류가 발생했습니다." }, { status: 500 })
     }
 
@@ -301,19 +247,14 @@ export async function GET(request: NextRequest) {
 
     let urlData: ShortenedUrlData
     try {
-      // 이미 객체인 경우와 문자열인 경우 모두 처리
-      if (typeof encoded === "object") {
-        urlData = encoded as ShortenedUrlData
-      } else {
-        urlData = JSON.parse(decodeURIComponent(encoded))
-      }
+      urlData = JSON.parse(decodeURIComponent(encoded))
     } catch (error) {
       console.error("❌ URL 데이터 파싱 실패:", error)
       return NextResponse.json({ error: "링크 데이터가 손상되었습니다." }, { status: 500 })
     }
 
     /* 클릭 수 증가 – 응답과 별개로 비동기 */
-    storage.incr(`clicks:${code}`).catch((err) => {
+    redis.incr(`clicks:${code}`).catch((err) => {
       console.error("클릭 수 증가 실패:", err)
     })
 
@@ -321,52 +262,9 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       originalUrl: urlData.originalUrl,
-      shortCode: urlData.shortCode,
-      createdAt: urlData.createdAt,
-      storage: storage instanceof UpstashRedis ? "redis" : "memory",
     })
   } catch (err) {
     console.error("❌ URL 조회 오류:", err)
     return NextResponse.json({ error: "URL 조회 중 오류가 발생했습니다." }, { status: 500 })
-  }
-}
-
-/* --------------------------------------------------------
- * PATCH  /api/shorten  – stats (clicks, createdAt, …)
- * ------------------------------------------------------ */
-export async function PATCH(request: NextRequest) {
-  try {
-    const body = await request.json().catch(() => ({}))
-    const { shortCode } = body
-
-    if (!shortCode) {
-      return NextResponse.json({ error: "단축 코드가 필요합니다." }, { status: 400 })
-    }
-
-    const [encoded, clicks] = await Promise.all([
-      storage.get(`short:${shortCode}`).catch(() => null),
-      storage.get(`clicks:${shortCode}`).catch(() => null),
-    ])
-
-    if (!encoded) {
-      return NextResponse.json({ error: "존재하지 않는 링크입니다." }, { status: 404 })
-    }
-
-    let urlData: ShortenedUrlData
-    if (typeof encoded === "object") {
-      urlData = encoded as ShortenedUrlData
-    } else {
-      urlData = JSON.parse(decodeURIComponent(encoded))
-    }
-
-    return NextResponse.json({
-      ...urlData,
-      clicks: Number(clicks ?? 0),
-      expiresIn: "24시간",
-      storage: storage instanceof UpstashRedis ? "redis" : "memory",
-    })
-  } catch (err) {
-    console.error("❌ 통계 조회 오류:", err)
-    return NextResponse.json({ error: "통계 조회 중 오류가 발생했습니다." }, { status: 500 })
   }
 }

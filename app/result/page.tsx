@@ -1,558 +1,550 @@
 "use client"
 
-import { useState, useEffect, Suspense } from "react"
-import { useSearchParams, useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
-import { FileText, Share2, Download, ArrowLeft, Building, Users, Coins, Phone, Copy, Check } from "lucide-react"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { AlertTriangle, Share2, Copy, Phone, Clock } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
-import { ConsultationModal } from "@/components/consultation-modal"
-import { useToast } from "@/hooks/use-toast"
+import ConsultationModal from "@/components/consultation-modal"
+import { Footer } from "@/components/footer"
 
-// 숫자 포맷팅 함수 (천 단위 콤마)
-const formatNumber = (num: number): string => {
-  return num.toLocaleString("ko-KR")
+interface FormData {
+  realEstate: string
+  businessProperty: string
+  land: string
+  otherRealEstate: string
+  giftRealEstate: string
+  giftOther: string
+  deposit: string
+  savings: string
+  stocks: string
+  funds: string
+  bonds: string
+  crypto: string
+  vehicle: string
+  lifeInsurance: string
+  pensionInsurance: string
+  jewelry: string
+  otherAssets: string
+  mortgageLoan: string
+  creditLoan: string
+  cardDebt: string
+  funeralExpense: string
+  taxArrears: string
+  otherDebt: string
+  basicDeduction: boolean
+  spouseDeduction: boolean
+  housingDeduction: boolean
 }
 
-// 만원 단위로 변환하는 함수
-const formatToManWon = (amount: number): string => {
-  if (amount === 0) return "0"
-
-  const manWon = Math.floor(amount / 10000)
-
-  if (manWon >= 100000000) {
-    // 1조 이상
-    const jo = Math.floor(manWon / 100000000)
-    const remainder = manWon % 100000000
-    if (remainder === 0) {
-      return `${jo}조`
-    } else {
-      const eok = Math.floor(remainder / 10000)
-      if (eok === 0) {
-        return `${jo}조 ${remainder}`
-      } else {
-        const man = remainder % 10000
-        if (man === 0) {
-          return `${jo}조 ${eok}억`
-        } else {
-          return `${jo}조 ${eok}억 ${man}`
-        }
-      }
-    }
-  } else if (manWon >= 10000) {
-    // 1억 이상
-    const eok = Math.floor(manWon / 10000)
-    const man = manWon % 10000
-    if (man === 0) {
-      return `${eok}억`
-    } else {
-      return `${eok}억 ${man}`
-    }
-  } else {
-    return `${manWon}`
-  }
-}
-
-interface CalculationResults {
+interface CalculationResult {
+  realEstateTotal: number
+  financialAssetsTotal: number
+  insuranceTotal: number
+  businessAssetsTotal: number
+  movableAssetsTotal: number
+  otherAssetsTotal: number
   totalAssets: number
-  totalDebts: number
-  funeralExpenses: number
+  financialDebtTotal: number
+  funeralExpenseTotal: number
+  taxArrearsTotal: number
+  otherDebtTotal: number
+  totalDebt: number
   netAssets: number
-  spouseExists: boolean
-  numChildren: number
-  numOtherHeirs: number
-  basicDeduction: number
-  spouseDeduction: number
-  childDeduction: number
-  otherDeduction: number
-  totalDeduction: number
-  taxableAssets: number
-  grossTax: number
-  taxDeduction: number
+  totalDeductions: number
+  financialDeduction: number
+  taxableAmount: number
+  taxRate: number
+  progressiveDeduction: number
   finalTax: number
+  calculatedTax?: number
+  giftTaxCredit?: number
+  reportTaxCredit?: number
+  totalTaxCredit?: number
+  giftAssetsTotal?: number
+  spouseDeductionAmount?: number
 }
 
-function ResultPageContent() {
-  const searchParams = useSearchParams()
-  const router = useRouter()
-  const { toast } = useToast()
+interface CalculationData {
+  formData: FormData
+  calculationResult: CalculationResult
+  timestamp: string
+}
 
-  const [results, setResults] = useState<CalculationResults | null>(null)
+export default function ResultPage() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const [calculationData, setCalculationData] = useState<CalculationData | null>(null)
+  const [loading, setLoading] = useState(true)
   const [isConsultationModalOpen, setIsConsultationModalOpen] = useState(false)
+  const [shareButtonText, setShareButtonText] = useState("📤 공유")
   const [isSharing, setIsSharing] = useState(false)
-  const [copied, setCopied] = useState(false)
+  const [showShareOptions, setShowShareOptions] = useState(false)
 
   useEffect(() => {
-    // URL 파라미터에서 계산 데이터 추출
-    const totalAssets = Number.parseInt(searchParams.get("totalAssets")?.replace(/,/g, "") || "0")
-    const totalDebts = Number.parseInt(searchParams.get("totalDebts")?.replace(/,/g, "") || "0")
-    const funeralExpenses = Number.parseInt(searchParams.get("funeralExpenses")?.replace(/,/g, "") || "0")
-    const spouseExists = searchParams.get("spouseExists") === "true"
-    const numChildren = Number.parseInt(searchParams.get("numChildren") || "0")
-    const numOtherHeirs = Number.parseInt(searchParams.get("numOtherHeirs") || "0")
+    const sharedData = searchParams.get("data")
 
-    if (totalAssets === 0) {
-      router.push("/")
-      return
-    }
-
-    // 계산 수행
-    const netAssets = totalAssets - totalDebts - funeralExpenses
-    const basicDeduction = 200000000
-
-    let spouseDeduction = 0
-    if (spouseExists) {
-      const totalHeirs = 1 + numChildren + numOtherHeirs
-      const spouseShare = netAssets / totalHeirs
-      spouseDeduction = Math.max(500000000, spouseShare)
-    }
-
-    const childDeduction = numChildren * 50000000
-    const otherDeduction = numOtherHeirs * 50000000
-    const totalDeduction = basicDeduction + spouseDeduction + childDeduction + otherDeduction
-    const taxableAssets = Math.max(0, netAssets - totalDeduction)
-
-    let grossTax = 0
-    if (taxableAssets > 0) {
-      if (taxableAssets <= 100000000) {
-        grossTax = taxableAssets * 0.1
-      } else if (taxableAssets <= 500000000) {
-        grossTax = 10000000 + (taxableAssets - 100000000) * 0.2
-      } else if (taxableAssets <= 1000000000) {
-        grossTax = 90000000 + (taxableAssets - 500000000) * 0.3
-      } else if (taxableAssets <= 3000000000) {
-        grossTax = 240000000 + (taxableAssets - 1000000000) * 0.4
+    if (sharedData) {
+      try {
+        const decodedData = JSON.parse(decodeURIComponent(sharedData))
+        setCalculationData(decodedData)
+      } catch (error) {
+        router.push("/")
+        return
+      }
+    } else {
+      const savedData = localStorage.getItem("inheritanceTaxCalculation")
+      if (savedData) {
+        try {
+          const data = JSON.parse(savedData)
+          setCalculationData(data)
+        } catch (error) {
+          router.push("/")
+          return
+        }
       } else {
-        grossTax = 1040000000 + (taxableAssets - 3000000000) * 0.5
+        router.push("/")
+        return
       }
     }
+    setLoading(false)
+  }, [])
 
-    let taxDeduction = 0
-    if (numChildren >= 1) {
-      taxDeduction = Math.min(grossTax * 0.05, 20000000)
+  const convertWonToKoreanAmount = (amount: number): string => {
+    amount = amount / 10000
+    if (amount === 0) return "0(원)"
+
+    const units = ["", "만", "억", "조"]
+    const result = []
+    let tempAmount = Math.abs(amount)
+
+    for (let i = 0; i < units.length && tempAmount > 0; i++) {
+      const remainder = tempAmount % 10000
+      if (remainder > 0) {
+        result.unshift(`${remainder.toLocaleString("ko-KR")}${units[i]}`)
+      }
+      tempAmount = Math.floor(tempAmount / 10000)
     }
 
-    const finalTax = Math.max(0, grossTax - taxDeduction)
+    const koreanAmount = result.join(" ")
+    return `${amount < 0 ? "-" : ""}${koreanAmount}(원)`
+  }
 
-    setResults({
-      totalAssets,
-      totalDebts,
-      funeralExpenses,
-      netAssets,
-      spouseExists,
-      numChildren,
-      numOtherHeirs,
-      basicDeduction,
-      spouseDeduction,
-      childDeduction,
-      otherDeduction,
-      totalDeduction,
-      taxableAssets,
-      grossTax,
-      taxDeduction,
-      finalTax,
-    })
-  }, [searchParams, router])
+  const formatNumber = (num: number) => {
+    const rounded = Math.round(num / 10000)
+    return convertWonToKoreanAmount(rounded * 10000)
+  }
 
-  const handleShare = async () => {
-    if (!results) return
+  const handleFeeCheck = () => {
+    window.open("https://blog.naver.com/l77155/223777746014", "_blank")
+  }
 
+  const handleBackToCalculator = () => {
+    window.location.href = "/"
+  }
+
+  const generateShareUrl = () => {
+    if (!calculationData) return ""
+
+    const encodedData = encodeURIComponent(JSON.stringify(calculationData))
+    return `${window.location.origin}/result?data=${encodedData}`
+  }
+
+  // Upstash Redis를 사용한 URL 단축 함수
+  const shortenUrl = async (originalUrl: string): Promise<string> => {
     try {
-      setIsSharing(true)
-
-      // URL 단축 API 호출
       const response = await fetch("/api/shorten", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          originalUrl: window.location.href,
-        }),
+        body: JSON.stringify({ originalUrl }),
       })
 
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.error || "링크 생성에 실패했습니다.")
+        throw new Error(errorData.error || "URL 단축 실패")
       }
 
       const data = await response.json()
-
-      // 단축 URL을 클립보드에 복사
-      await navigator.clipboard.writeText(data.shortUrl)
-
-      toast({
-        title: "링크가 복사되었습니다!",
-        description: `${data.cached ? "기존" : "새로운"} 단축 링크가 클립보드에 복사되었습니다. (${data.expiresIn} 유효)`,
-      })
-
-      console.log("📋 단축 링크 복사:", data.shortUrl)
+      console.log("✅ URL 단축 성공:", data)
+      return data.shortUrl
     } catch (error) {
       console.error("❌ URL 단축 오류:", error)
-      toast({
-        title: "링크 생성 실패",
-        description: error instanceof Error ? error.message : "링크 생성 중 오류가 발생했습니다.",
-        variant: "destructive",
-      })
+      return originalUrl // 실패 시 원본 URL 반환
+    }
+  }
+
+  const handleCopyLink = async () => {
+    if (!calculationData) return
+
+    setIsSharing(true)
+    setShareButtonText("🔗 단축중...")
+
+    try {
+      const originalUrl = generateShareUrl()
+      const shortUrl = await shortenUrl(originalUrl)
+
+      await navigator.clipboard.writeText(shortUrl)
+
+      setShareButtonText("✅ 복사완료!")
+      setTimeout(() => {
+        setShareButtonText("📤 공유")
+        setShowShareOptions(false)
+      }, 2000)
+    } catch (error) {
+      setShareButtonText("❌ 복사실패")
+      setTimeout(() => {
+        setShareButtonText("📤 공유")
+      }, 2000)
     } finally {
       setIsSharing(false)
     }
   }
 
-  const handleCopyLink = async () => {
+  const handleShare = () => {
+    setShowShareOptions(!showShareOptions)
+  }
+
+  const handleWebShare = async () => {
+    if (!calculationData) return
+
+    setIsSharing(true)
+
     try {
-      await navigator.clipboard.writeText(window.location.href)
-      setCopied(true)
-      toast({
-        title: "링크가 복사되었습니다!",
-        description: "계산 결과 링크가 클립보드에 복사되었습니다.",
-      })
-      setTimeout(() => setCopied(false), 2000)
+      const originalUrl = generateShareUrl()
+      const shortUrl = await shortenUrl(originalUrl)
+
+      const shareData = {
+        title: "상속세 계산 결과",
+        text: `상속세 계산 결과: ${convertWonToKoreanAmount(calculationData.calculationResult.finalTax * 10000)}`,
+        url: shortUrl,
+      }
+
+      if (navigator.share) {
+        await navigator.share(shareData)
+      } else {
+        await navigator.clipboard.writeText(shortUrl)
+        setShareButtonText("✅ 복사완료!")
+        setTimeout(() => {
+          setShareButtonText("📤 공유")
+          setShowShareOptions(false)
+        }, 2000)
+      }
     } catch (error) {
-      toast({
-        title: "복사 실패",
-        description: "링크 복사 중 오류가 발생했습니다.",
-        variant: "destructive",
-      })
+      // 공유 실패 시 무시
+    } finally {
+      setIsSharing(false)
     }
   }
 
-  const handleDownload = () => {
-    if (!results) return
+  const consultationCalculationData = calculationData
+    ? {
+        totalAssets: calculationData.calculationResult.totalAssets || 0,
+        totalDebt: calculationData.calculationResult.totalDebt || 0,
+        netAssets: calculationData.calculationResult.netAssets || 0,
+        taxableAmount: calculationData.calculationResult.taxableAmount || 0,
+        taxRate: calculationData.calculationResult.taxRate || 0,
+        progressiveDeduction: calculationData.calculationResult.progressiveDeduction || 0,
+        finalTax: calculationData.calculationResult.finalTax || 0,
+        basicDeduction: calculationData.formData.basicDeduction || false,
+        spouseDeduction: calculationData.formData.spouseDeduction || false,
+        housingDeduction: calculationData.formData.housingDeduction || false,
+        realEstateTotal: calculationData.calculationResult.realEstateTotal || 0,
+        financialAssetsTotal: calculationData.calculationResult.financialAssetsTotal || 0,
+        giftAssetsTotal: calculationData.calculationResult.giftAssetsTotal || 0,
+        otherAssetsTotal: calculationData.calculationResult.otherAssetsTotal || 0,
+        financialDebtTotal: calculationData.calculationResult.financialDebtTotal || 0,
+        funeralExpenseTotal: calculationData.calculationResult.funeralExpenseTotal || 0,
+        taxArrearsTotal: calculationData.calculationResult.taxArrearsTotal || 0,
+        otherDebtTotal: calculationData.calculationResult.otherDebtTotal || 0,
+        totalDeductions: calculationData.calculationResult.totalDeductions || 0,
+        financialDeduction: calculationData.calculationResult.financialDeduction || 0,
+        calculatedTax: calculationData.calculationResult.calculatedTax || 0,
+        giftTaxCredit: calculationData.calculationResult.giftTaxCredit || 0,
+        reportTaxCredit: calculationData.calculationResult.reportTaxCredit || 0,
+        totalTaxCredit: calculationData.calculationResult.totalTaxCredit || 0,
+        spouseDeductionAmount: calculationData.calculationResult.spouseDeductionAmount || 0,
+      }
+    : undefined
 
-    const content = `
-상속세 계산 결과
-
-=== 입력 정보 ===
-총 자산: ${formatNumber(results.totalAssets)}원 (${formatToManWon(results.totalAssets)}만원)
-총 부채: ${formatNumber(results.totalDebts)}원 (${formatToManWon(results.totalDebts)}만원)
-장례비용: ${formatNumber(results.funeralExpenses)}원 (${formatToManWon(results.funeralExpenses)}만원)
-배우자: ${results.spouseExists ? "있음" : "없음"}
-자녀 수: ${results.numChildren}명
-기타 상속인: ${results.numOtherHeirs}명
-
-=== 계산 결과 ===
-순자산: ${formatNumber(results.netAssets)}원 (${formatToManWon(results.netAssets)}만원)
-
-공제 내역:
-- 기초공제: ${formatNumber(results.basicDeduction)}원 (${formatToManWon(results.basicDeduction)}만원)
-- 배우자공제: ${formatNumber(results.spouseDeduction)}원 (${formatToManWon(results.spouseDeduction)}만원)
-- 자녀공제: ${formatNumber(results.childDeduction)}원 (${formatToManWon(results.childDeduction)}만원)
-- 기타공제: ${formatNumber(results.otherDeduction)}원 (${formatToManWon(results.otherDeduction)}만원)
-- 총 공제액: ${formatNumber(results.totalDeduction)}원 (${formatToManWon(results.totalDeduction)}만원)
-
-상속세 과세표준: ${formatNumber(results.taxableAssets)}원 (${formatToManWon(results.taxableAssets)}만원)
-산출세액: ${formatNumber(results.grossTax)}원 (${formatToManWon(results.grossTax)}만원)
-세액공제: ${formatNumber(results.taxDeduction)}원 (${formatToManWon(results.taxDeduction)}만원)
-
-최종 상속세: ${formatNumber(results.finalTax)}원 (${formatToManWon(results.finalTax)}만원)
-
-* 본 계산 결과는 참고용이며, 실제 세액과 다를 수 있습니다.
-* 정확한 계산을 위해서는 전문가 상담을 받으시기 바랍니다.
-
-계산일시: ${new Date().toLocaleString("ko-KR")}
-제공: 세무법인 더봄
-    `.trim()
-
-    const blob = new Blob([content], { type: "text/plain;charset=utf-8" })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = `상속세계산결과_${new Date().toISOString().split("T")[0]}.txt`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
-
-    toast({
-      title: "파일이 다운로드되었습니다!",
-      description: "계산 결과가 텍스트 파일로 저장되었습니다.",
-    })
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-slate-900"></div>
+          <p className="mt-4 text-slate-600">계산 결과를 불러오는 중...</p>
+        </div>
+      </div>
+    )
   }
 
-  if (!results) {
-    return <div>계산 중...</div>
+  if (!calculationData) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-slate-600">계산 데이터를 찾을 수 없습니다.</p>
+          <Button onClick={() => router.push("/")} className="mt-4">
+            계산기로 돌아가기
+          </Button>
+        </div>
+      </div>
+    )
   }
+
+  const { calculationResult } = calculationData
+
+  // 산출세액 계산 (과세표준 × 세율)
+  const calculatedTax = Math.round(calculationResult.taxableAmount * (calculationResult.taxRate / 100))
+
+  // 세액공제 계산 (산출세액 - 최종상속세)
+  const taxCredit = calculatedTax - calculationResult.finalTax
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
+          <div className="flex justify-between items-center h-20">
             <div className="flex items-center">
-              <Link href="/">
-                <Image
-                  src="/logo-deobom-blue.png"
-                  alt="세무법인 더봄"
-                  width={240}
-                  height={72}
-                  className="h-10 w-auto"
-                />
-              </Link>
+              <div className="flex-shrink-0 flex items-center">
+                <Link href="/">
+                  <Image
+                    src="/logo-deobom-blue.png"
+                    alt="세무법인 더봄"
+                    width={240}
+                    height={72}
+                    className="h-10 w-auto"
+                  />
+                </Link>
+              </div>
             </div>
-            <Button variant="outline" onClick={() => router.push("/")}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              다시 계산하기
-            </Button>
+
+            <div className="flex items-center space-x-4">
+              <div className="hidden md:flex items-center space-x-2 text-slate-600">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+                  />
+                </svg>
+                <span className="font-medium text-base">02-336-0309</span>
+              </div>
+              <Button
+                className="bg-slate-800 hover:bg-slate-900 text-white px-6 py-3 text-base font-medium rounded-md"
+                onClick={() => setIsConsultationModalOpen(true)}
+              >
+                상담신청
+              </Button>
+            </div>
+            <div className="md:hidden">
+              <Button variant="ghost" size="sm">
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </Button>
+            </div>
           </div>
         </div>
       </header>
 
-      {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">상속세 계산 결과</h1>
-          <p className="text-gray-600">아래는 입력하신 정보를 바탕으로 계산된 예상 상속세입니다.</p>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Left Column - Input Summary & Deductions */}
-          <div className="space-y-6">
-            {/* 입력 정보 요약 */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Building className="mr-2 h-5 w-5" />
-                  입력 정보 요약
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">총 자산</span>
-                    <div className="text-right">
-                      <div className="font-semibold">{formatNumber(results.totalAssets)}원</div>
-                      <div className="text-sm text-gray-500">({formatToManWon(results.totalAssets)}만원)</div>
-                    </div>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">총 부채</span>
-                    <div className="text-right">
-                      <div className="font-semibold">{formatNumber(results.totalDebts)}원</div>
-                      <div className="text-sm text-gray-500">({formatToManWon(results.totalDebts)}만원)</div>
-                    </div>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">장례비용</span>
-                    <div className="text-right">
-                      <div className="font-semibold">{formatNumber(results.funeralExpenses)}원</div>
-                      <div className="text-sm text-gray-500">({formatToManWon(results.funeralExpenses)}만원)</div>
-                    </div>
-                  </div>
-                  <Separator />
-                  <div className="flex justify-between font-semibold">
-                    <span>순자산</span>
-                    <div className="text-right">
-                      <div>{formatNumber(results.netAssets)}원</div>
-                      <div className="text-sm text-gray-500">({formatToManWon(results.netAssets)}만원)</div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* 상속인 정보 */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Users className="mr-2 h-5 w-5" />
-                  상속인 정보
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">배우자</span>
-                    <span className="font-semibold">{results.spouseExists ? "있음" : "없음"}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">자녀 수</span>
-                    <span className="font-semibold">{results.numChildren}명</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">기타 상속인</span>
-                    <span className="font-semibold">{results.numOtherHeirs}명</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* 공제 내역 */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <FileText className="mr-2 h-5 w-5" />
-                  공제 내역
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">기초공제</span>
-                    <div className="text-right">
-                      <div className="font-semibold">{formatNumber(results.basicDeduction)}원</div>
-                      <div className="text-sm text-gray-500">({formatToManWon(results.basicDeduction)}만원)</div>
-                    </div>
-                  </div>
-                  {results.spouseExists && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">배우자공제</span>
-                      <div className="text-right">
-                        <div className="font-semibold">{formatNumber(results.spouseDeduction)}원</div>
-                        <div className="text-sm text-gray-500">({formatToManWon(results.spouseDeduction)}만원)</div>
-                      </div>
-                    </div>
-                  )}
-                  {results.numChildren > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">자녀공제</span>
-                      <div className="text-right">
-                        <div className="font-semibold">{formatNumber(results.childDeduction)}원</div>
-                        <div className="text-sm text-gray-500">({formatToManWon(results.childDeduction)}만원)</div>
-                      </div>
-                    </div>
-                  )}
-                  {results.numOtherHeirs > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">기타 인적공제</span>
-                      <div className="text-right">
-                        <div className="font-semibold">{formatNumber(results.otherDeduction)}원</div>
-                        <div className="text-sm text-gray-500">({formatToManWon(results.otherDeduction)}만원)</div>
-                      </div>
-                    </div>
-                  )}
-                  <Separator />
-                  <div className="flex justify-between font-semibold text-lg">
-                    <span>총 공제액</span>
-                    <div className="text-right">
-                      <div>{formatNumber(results.totalDeduction)}원</div>
-                      <div className="text-sm text-gray-500">({formatToManWon(results.totalDeduction)}만원)</div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Right Column - Tax Calculation & Actions */}
-          <div className="space-y-6">
-            {/* 상속세 계산 결과 */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Coins className="mr-2 h-5 w-5" />
-                  상속세 계산 결과
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="bg-blue-50 p-6 rounded-lg mb-6 text-center">
-                  <div className="text-sm text-gray-600 mb-2">최종 상속세</div>
-                  <div className="text-3xl font-bold text-blue-600 mb-1">{formatNumber(results.finalTax)}원</div>
-                  <div className="text-lg text-gray-600">({formatToManWon(results.finalTax)}만원)</div>
-                </div>
-
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">과세표준</span>
-                    <div className="text-right">
-                      <div className="font-semibold">{formatNumber(results.taxableAssets)}원</div>
-                      <div className="text-sm text-gray-500">({formatToManWon(results.taxableAssets)}만원)</div>
-                    </div>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">산출세액</span>
-                    <div className="text-right">
-                      <div className="font-semibold">{formatNumber(results.grossTax)}원</div>
-                      <div className="text-sm text-gray-500">({formatToManWon(results.grossTax)}만원)</div>
-                    </div>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">세액공제</span>
-                    <div className="text-right">
-                      <div className="font-semibold">{formatNumber(results.taxDeduction)}원</div>
-                      <div className="text-sm text-gray-500">({formatToManWon(results.taxDeduction)}만원)</div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* 액션 버튼들 */}
-            <Card>
-              <CardHeader>
-                <CardTitle>결과 활용</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <Button onClick={handleShare} className="w-full bg-blue-600 hover:bg-blue-700" disabled={isSharing}>
-                    <Share2 className="mr-2 h-4 w-4" />
-                    {isSharing ? "링크 생성 중..." : "단축 링크로 공유하기"}
-                  </Button>
-
-                  <Button onClick={handleCopyLink} variant="outline" className="w-full bg-transparent">
-                    {copied ? (
-                      <>
-                        <Check className="mr-2 h-4 w-4" />
-                        복사됨!
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="mr-2 h-4 w-4" />
-                        링크 복사하기
-                      </>
-                    )}
-                  </Button>
-
-                  <Button onClick={handleDownload} variant="outline" className="w-full bg-transparent">
-                    <Download className="mr-2 h-4 w-4" />
-                    결과 다운로드
-                  </Button>
-
-                  <Button
-                    onClick={() => setIsConsultationModalOpen(true)}
-                    className="w-full bg-green-600 hover:bg-green-700"
-                  >
-                    <Phone className="mr-2 h-4 w-4" />
-                    전문가 상담 신청
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* 주의사항 */}
-            <Card>
-              <CardContent className="pt-6">
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                  <h4 className="font-semibold text-yellow-800 mb-2">⚠️ 주의사항</h4>
-                  <ul className="text-sm text-yellow-700 space-y-1">
-                    <li>• 본 계산 결과는 참고용이며, 실제 세액과 다를 수 있습니다.</li>
-                    <li>• 각종 특례 및 감면 규정이 적용되지 않았습니다.</li>
-                    <li>• 정확한 계산을 위해서는 전문가 상담을 받으시기 바랍니다.</li>
-                  </ul>
-                </div>
-              </CardContent>
-            </Card>
+      <div className="bg-slate-50 border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900">상속세 계산기</h2>
+              <p className="text-sm text-slate-600">2025년 기준 · 전문 세무사 검증 · 무료 서비스</p>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* 상담 신청 모달 */}
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-2xl font-bold text-slate-900">상속세 계산 결과</h1>
+          <Button
+            onClick={handleBackToCalculator}
+            variant="outline"
+            className="bg-slate-600 text-white hover:bg-slate-700 border-slate-600"
+          >
+            다시 계산하기
+          </Button>
+        </div>
+
+        <Card className="mb-8">
+          <CardContent className="text-center py-8">
+            <p className="text-lg text-slate-600 mb-2">최종 상속세</p>
+            <p className="text-4xl font-bold text-blue-600 mb-4">
+              {convertWonToKoreanAmount(calculationData.calculationResult.finalTax * 10000)}
+            </p>
+            <p className="text-sm text-slate-500">
+              과세표준 {convertWonToKoreanAmount(calculationData.calculationResult.taxableAmount * 10000)} ×{" "}
+              {calculationData.calculationResult.taxRate}% - 누진공제{" "}
+              {convertWonToKoreanAmount(calculationData.calculationResult.progressiveDeduction * 10000)}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="text-lg">상속세 계산 과정</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div className="flex justify-between py-2">
+                <span className="text-slate-600">순 재산가액</span>
+                <span className="font-medium">
+                  {convertWonToKoreanAmount(calculationData.calculationResult.netAssets * 10000)}
+                </span>
+              </div>
+              <div className="flex justify-between py-2">
+                <span className="text-slate-600">총 공제액</span>
+                <span className="font-medium text-green-600">
+                  -{convertWonToKoreanAmount(calculationData.calculationResult.totalDeductions * 10000)}
+                </span>
+              </div>
+              <hr />
+              <div className="flex justify-between py-2">
+                <span className="text-slate-600">과세표준</span>
+                <span className="font-medium">
+                  {convertWonToKoreanAmount(calculationData.calculationResult.taxableAmount * 10000)}
+                </span>
+              </div>
+              <div className="flex justify-between py-2">
+                <span className="text-slate-600">적용 세율</span>
+                <span className="font-medium">{calculationData.calculationResult.taxRate.toFixed(1)}%</span>
+              </div>
+              <div className="flex justify-between py-2">
+                <span className="text-slate-600">산출세액</span>
+                <span className="font-medium">{convertWonToKoreanAmount(calculatedTax * 10000)}</span>
+              </div>
+              <div className="flex justify-between py-2">
+                <span className="text-slate-600">세액공제</span>
+                <span className="font-medium text-green-600">-{convertWonToKoreanAmount(taxCredit * 10000)}</span>
+              </div>
+              <hr />
+              <div className="flex justify-between py-2 font-bold text-lg">
+                <span className="text-slate-600">최종 상속세</span>
+                <span className="text-blue-600">
+                  {convertWonToKoreanAmount(calculationData.calculationResult.finalTax * 10000)}
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="flex justify-center gap-4 mb-8">
+          <Button
+            className="bg-slate-700 hover:bg-slate-800 text-white px-6 py-2"
+            onClick={() => setIsConsultationModalOpen(true)}
+          >
+            상담신청 하기
+          </Button>
+
+          <div className="relative">
+            <Button
+              className="bg-slate-700 hover:bg-slate-800 text-white px-6 py-2"
+              onClick={handleShare}
+              disabled={isSharing}
+            >
+              {isSharing ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  {shareButtonText.includes("단축") ? "단축중..." : "생성중..."}
+                </>
+              ) : (
+                shareButtonText
+              )}
+            </Button>
+
+            {showShareOptions && (
+              <div className="absolute top-full mt-2 right-0 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-48">
+                <div className="p-2">
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start text-left hover:bg-gray-50"
+                    onClick={handleCopyLink}
+                    disabled={isSharing}
+                  >
+                    <Copy className="w-4 h-4 mr-2" />
+                    단축 링크 복사
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start text-left hover:bg-gray-50"
+                    onClick={handleWebShare}
+                    disabled={isSharing}
+                  >
+                    <Share2 className="w-4 h-4 mr-2" />
+                    공유하기
+                  </Button>
+                </div>
+                <div className="px-3 py-2 border-t border-gray-100">
+                  <div className="flex items-center text-xs text-gray-500">
+                    <Clock className="w-3 h-3 mr-1" />
+                    24시간 후 자동 만료
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {searchParams.get("data") && (
+          <Alert className="mb-8 bg-blue-50 border-blue-200">
+            <Share2 className="h-4 w-4 text-blue-600" />
+            <AlertDescription className="text-blue-800">
+              <strong>📤 공유된 계산 결과</strong>
+              <br />이 페이지는 다른 사용자가 공유한 상속세 계산 결과입니다. 본인의 계산을 원하시면 "다시 계산하기"를
+              클릭해주세요.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        <Card className="mb-8 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+          <CardContent className="text-center py-6">
+            <h3 className="text-lg font-semibold text-slate-900 mb-3">상속세 수수료가 궁금하신가요?</h3>
+            <p className="text-sm text-slate-600 mb-4">세무법인 더봄은 수수료를 투명하게 공개합니다.</p>
+            <Button onClick={handleFeeCheck} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2">
+              💰 수수료 확인하러가기
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Alert className="bg-yellow-50 border-yellow-300 mb-8">
+          <AlertTriangle className="h-4 w-4 text-yellow-600" />
+          <AlertDescription className="text-yellow-800">
+            <div className="font-medium mb-2">⚠️ 주의사항</div>
+            <ul className="text-sm space-y-1">
+              <li>• 이 결과는 참고용이며, 실제 상속세는 세무사와 상담하시기 바랍니다.</li>
+              <li>• 증여 합산, 특수관계인 공제 등 추가적인 요소가 있을 수 있습니다.</li>
+              <li>• 세법 개정에 따라 계산 기준이 변경될 수 있습니다.</li>
+            </ul>
+          </AlertDescription>
+        </Alert>
+      </div>
+
+      <div className="md:hidden fixed bottom-6 right-6 z-50">
+        <a
+          href="tel:02-336-0309"
+          className="w-14 h-14 bg-slate-800 hover:bg-slate-900 text-white rounded-full flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-110"
+          aria-label="전화걸기"
+        >
+          <Phone className="w-6 h-6" />
+        </a>
+      </div>
+
       <ConsultationModal
         isOpen={isConsultationModalOpen}
         onClose={() => setIsConsultationModalOpen(false)}
-        calculationData={results}
+        calculationData={consultationCalculationData}
       />
-    </div>
-  )
-}
 
-export default function ResultPage() {
-  return (
-    <Suspense fallback={<div>로딩 중...</div>}>
-      <ResultPageContent />
-    </Suspense>
+      <Footer />
+    </div>
   )
 }
