@@ -1,7 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -13,8 +14,21 @@ import Image from "next/image"
 import Link from "next/link"
 import ConsultationModal from "@/components/consultation-modal"
 import { Footer } from "@/components/footer"
+import { toast } from "@/hooks/use-toast"
+
+interface ShortenedUrl {
+  id: string
+  originalUrl: string
+  shortCode: string
+  shortUrl: string
+  clicks: number
+  createdAt: string
+}
 
 export default function InheritanceTaxCalculator() {
+  const [originalUrl, setOriginalUrl] = useState("")
+  const [shortenedUrls, setShortenedUrls] = useState<ShortenedUrl[]>([])
+  const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
   const [currentStep, setCurrentStep] = useState(1)
   const [isConsultationModalOpen, setIsConsultationModalOpen] = useState(false)
@@ -481,6 +495,147 @@ export default function InheritanceTaxCalculator() {
     reportTaxCredit: calculationResult.reportTaxCredit,
     totalTaxCredit: calculationResult.totalTaxCredit,
     finalTax: calculationResult.finalTax,
+  }
+
+  // 로컬스토리지에서 데이터 로드
+  useEffect(() => {
+    const saved = localStorage.getItem("shortenedUrls")
+    if (saved) {
+      setShortenedUrls(JSON.parse(saved))
+    }
+  }, [])
+
+  // 로컬스토리지에 데이터 저장
+  useEffect(() => {
+    localStorage.setItem("shortenedUrls", JSON.stringify(shortenedUrls))
+  }, [shortenedUrls])
+
+  // 랜덤 단축 코드 생성
+  const generateShortCode = (): string => {
+    const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+    let result = ""
+    for (let i = 0; i < 6; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length))
+    }
+    return result
+  }
+
+  // URL 유효성 검사
+  const isValidUrl = (url: string): boolean => {
+    try {
+      new URL(url)
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  // URL 단축
+  const shortenUrl = async () => {
+    if (!originalUrl.trim()) {
+      toast({
+        title: "오류",
+        description: "URL을 입력해주세요.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    // http:// 또는 https://가 없으면 추가
+    let processedUrl = originalUrl.trim()
+    if (!processedUrl.startsWith("http://") && !processedUrl.startsWith("https://")) {
+      processedUrl = "https://" + processedUrl
+    }
+
+    if (!isValidUrl(processedUrl)) {
+      toast({
+        title: "오류",
+        description: "유효한 URL을 입력해주세요.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsLoading(true)
+
+    try {
+      // 이미 단축된 URL인지 확인
+      const existing = shortenedUrls.find((item) => item.originalUrl === processedUrl)
+      if (existing) {
+        toast({
+          title: "알림",
+          description: "이미 단축된 URL입니다.",
+        })
+        setIsLoading(false)
+        return
+      }
+
+      const shortCode = generateShortCode()
+      const shortUrl = `${window.location.origin}/${shortCode}`
+
+      const newShortenedUrl: ShortenedUrl = {
+        id: Date.now().toString(),
+        originalUrl: processedUrl,
+        shortCode,
+        shortUrl,
+        clicks: 0,
+        createdAt: new Date().toISOString(),
+      }
+
+      setShortenedUrls((prev) => [newShortenedUrl, ...prev])
+      setOriginalUrl("")
+
+      toast({
+        title: "성공!",
+        description: "URL이 성공적으로 단축되었습니다.",
+      })
+    } catch (error) {
+      toast({
+        title: "오류",
+        description: "URL 단축 중 오류가 발생했습니다.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // 클립보드에 복사
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text)
+      toast({
+        title: "복사 완료!",
+        description: "클립보드에 복사되었습니다.",
+      })
+    } catch (error) {
+      toast({
+        title: "복사 실패",
+        description: "클립보드 복사에 실패했습니다.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  // URL 삭제
+  const deleteUrl = (id: string) => {
+    setShortenedUrls((prev) => prev.filter((item) => item.id !== id))
+    toast({
+      title: "삭제 완료",
+      description: "URL이 삭제되었습니다.",
+    })
+  }
+
+  // 날짜 포맷팅
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString("ko-KR", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    })
   }
 
   return (
