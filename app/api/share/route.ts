@@ -1,7 +1,5 @@
+import { kv } from "@vercel/kv"
 import { type NextRequest, NextResponse } from "next/server"
-
-// 서버 메모리에 데이터 저장하는 Map 객체
-const dataStore = new Map<string, { data: any; timestamp: number }>()
 
 // 8자리 랜덤 ID 생성 함수
 function generateShortId(): string {
@@ -13,42 +11,47 @@ function generateShortId(): string {
   return result
 }
 
-// 24시간 지난 데이터 삭제 함수
-function cleanupExpiredData() {
-  const now = Date.now()
-  const expireTime = 24 * 60 * 60 * 1000 // 24시간
-
-  for (const [key, value] of dataStore.entries()) {
-    if (now - value.timestamp > expireTime) {
-      dataStore.delete(key)
-    }
-  }
-}
-
 // POST: 데이터 저장하고 단축 ID 반환
 export async function POST(request: NextRequest) {
   try {
     const calculationData = await request.json()
 
-    // 만료된 데이터 정리
-    cleanupExpiredData()
-
     // 새로운 ID 생성 (중복 방지)
     let shortId: string
+    let attempts = 0
+    const maxAttempts = 10
+
     do {
       shortId = generateShortId()
-    } while (dataStore.has(shortId))
+      attempts++
 
-    // 메모리에 데이터 저장
-    dataStore.set(shortId, {
-      data: calculationData,
-      timestamp: Date.now(),
-    })
+      if (attempts > maxAttempts) {
+        throw new Error("Failed to generate unique ID")
+      }
+    } while (await kv.exists(`share:${shortId}`))
+
+    // Vercel KV에 데이터 저장 (24시간 TTL)
+    await kv.setex(
+      `share:${shortId}`,
+      24 * 60 * 60,
+      JSON.stringify({
+        data: calculationData,
+        createdAt: Date.now(),
+      }),
+    )
+
+    console.log(`데이터 저장 완료: ${shortId}`)
 
     return NextResponse.json({ shortId })
   } catch (error) {
     console.error("Error storing data:", error)
-    return NextResponse.json({ error: "Failed to store data" }, { status: 500 })
+    return NextResponse.json(
+      {
+        error: "Failed to store data",
+        details: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 },
+    )
   }
 }
 
@@ -62,28 +65,60 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Short ID is required" }, { status: 400 })
     }
 
-    // 만료된 데이터 정리
-    cleanupExpiredData()
+    // Vercel KV에서 데이터 조회
+    const storedData = await kv.get(`share:${shortId}`)
 
-    // 데이터 조회
-    const stored = dataStore.get(shortId)
-
-    if (!stored) {
-      return NextResponse.json({ error: "Data not found or expired" }, { status: 404 })
+    if (!storedData) {
+      console.log(`데이터를 찾을 수 없음: ${shortId}`)
+      return NextResponse.json(
+        {
+          error: "Share link not found or expired",
+        },
+        { status: 404 },
+      )
     }
 
-    // 24시간 경과 확인
-    const now = Date.now()
-    const expireTime = 24 * 60 * 60 * 1000
+    // JSON 파싱
+    const parsed = typeof storedData === "string" ? JSON.parse(storedData) : storedData
 
-    if (now - stored.timestamp > expireTime) {
-      dataStore.delete(shortId)
-      return NextResponse.json({ error: "Data has expired" }, { status: 404 })
-    }
+    console.log(`데이터 조회 완료: ${shortId}`)
 
-    return NextResponse.json(stored.data)
+    return NextResponse.json({ data: parsed.data })
   } catch (error) {
     console.error("Error retrieving data:", error)
-    return NextResponse.json({ error: "Failed to retrieve data" }, { status: 500 })
+    return NextResponse.json(
+      {
+        error: "Failed to retrieve data",
+        details: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 },
+    )
+  }
+}
+
+// DELETE: 단축 ID 데이터 삭제 (선택적)
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const shortId = searchParams.get("id")
+
+    if (!shortId) {
+      return NextResponse.json({ error: "Short ID is required" }, { status: 400 })
+    }
+
+    await kv.del(`share:${shortId}`)
+
+    console.log(`데이터 삭제 완료: ${shortId}`)
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error("Error deleting data:", error)
+    return NextResponse.json(
+      {
+        error: "Failed to delete data",
+        details: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 },
+    )
   }
 }
