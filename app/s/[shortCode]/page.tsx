@@ -221,11 +221,6 @@ export default function ShortUrlRedirectPage() {
                     <span className="text-2xl font-bold text-blue-600">{countdown}</span>초 후 자동으로 이동됩니다.
                   </p>
 
-                  <div className="bg-gray-50 rounded-lg p-3 mb-6">
-                    <p className="text-sm text-gray-600 mb-1">📊 공유받은 상속세 계산 결과</p>
-                    <p className="text-xs text-gray-500 break-all">{originalUrl}</p>
-                  </div>
-
                   <div className="space-y-3">
                     <Button
                       onClick={handleRedirectNow}
