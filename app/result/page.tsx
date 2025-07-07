@@ -5,12 +5,11 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { AlertTriangle, Share2, Copy, Phone } from 'lucide-react'
+import { AlertTriangle, Share2, Copy, Phone } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import ConsultationModal from "@/components/consultation-modal"
 import { Footer } from "@/components/footer"
-import Content from "@/components/content" // Declare the Content variable
 
 interface FormData {
   realEstate: string
@@ -554,7 +553,6 @@ export default function ResultPage() {
         onClose={() => setIsConsultationModalOpen(false)}
         calculationData={consultationCalculationData}
       />
-      <Content /> {/* Insert the Content component here */}
 
       <Footer />
     </div>
