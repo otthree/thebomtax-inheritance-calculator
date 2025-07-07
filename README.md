@@ -1,30 +1,19 @@
-# Korean tax calculator clone
+# 상속세 계산기
 
-*Automatically synced with your [v0.dev](https://v0.dev) deployments*
+세무법인 더봄의 상속세 계산기입니다.
 
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/xfkwl00214xfkwl00214-9802s-projects/v0-korean-tax-calculator-clone)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.dev-black?style=for-the-badge)](https://v0.dev/chat/projects/X6BrfwFnb8Y)
+## 기능
 
-## Overview
+- 상속세 계산
+- 계산 결과 공유
+- 상담 신청
 
-This repository will stay in sync with your deployed chats on [v0.dev](https://v0.dev).
-Any changes you make to your deployed app will be automatically pushed to this repository from [v0.dev](https://v0.dev).
+## 개발
 
-## Deployment
+\`\`\`bash
+npm run dev
+\`\`\`
 
-Your project is live at:
+## 배포
 
-**[https://vercel.com/xfkwl00214xfkwl00214-9802s-projects/v0-korean-tax-calculator-clone](https://vercel.com/xfkwl00214xfkwl00214-9802s-projects/v0-korean-tax-calculator-clone)**
-
-## Build your app
-
-Continue building your app on:
-
-**[https://v0.dev/chat/projects/X6BrfwFnb8Y](https://v0.dev/chat/projects/X6BrfwFnb8Y)**
-
-## How It Works
-
-1. Create and modify your project using [v0.dev](https://v0.dev)
-2. Deploy your chats from the v0 interface
-3. Changes are automatically pushed to this repository
-4. Vercel deploys the latest version from this repository
+Vercel을 통해 자동 배포됩니다.
