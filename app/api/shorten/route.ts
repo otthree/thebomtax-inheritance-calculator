@@ -1,102 +1,98 @@
 import { type NextRequest, NextResponse } from "next/server"
 
-// Upstash Redis 클라이언트
+/* --------------------------------------------------------
+ * Upstash Redis – lightweight REST helper
+ * ------------------------------------------------------ */
 class UpstashRedis {
   private baseUrl: string
   private token: string
 
   constructor() {
-    this.baseUrl = process.env.KV_REST_API_URL!
-    this.token = process.env.KV_REST_API_TOKEN!
+    if (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN) {
+      throw new Error("⚠️  Upstash 환경 변수가 누락되었습니다.")
+    }
+    this.baseUrl = process.env.KV_REST_API_URL
+    this.token = process.env.KV_REST_API_TOKEN
   }
 
-  async set(key: string, value: any, ttlSeconds?: number) {
-    const url = `${this.baseUrl}/set/${key}`
-    const body = JSON.stringify(value)
+  /* URL-encode keys so that '/', ':' 등 특수 문자가 안전해집니다. */
+  private encKey(key: string) {
+    return encodeURIComponent(key)
+  }
 
-    const response = await fetch(url, {
+  /* 문자열이 아니면 JSON 문자열로 직렬화 후 인코딩 */
+  private encVal(val: unknown) {
+    const str = typeof val === "string" ? val : JSON.stringify(val)
+    return encodeURIComponent(str)
+  }
+
+  async set(key: string, value: unknown, ttl?: number) {
+    const k = this.encKey(key)
+    const v = this.encVal(value)
+    const endpoint = ttl ? `${this.baseUrl}/setex/${k}/${ttl}/${v}` : `${this.baseUrl}/set/${k}/${v}`
+
+    const res = await fetch(endpoint, {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${this.token}`,
-        "Content-Type": "application/json",
-      },
-      body: ttlSeconds ? JSON.stringify([body, "EX", ttlSeconds]) : body,
+      headers: { Authorization: `Bearer ${this.token}` },
     })
-
-    if (!response.ok) {
-      throw new Error(`Redis SET failed: ${response.statusText}`)
-    }
-
-    return response.json()
+    if (!res.ok) throw new Error(`Redis SET failed: ${res.status} ${res.statusText}`)
+    return res.json()
   }
 
   async get(key: string) {
-    const url = `${this.baseUrl}/get/${key}`
-
-    const response = await fetch(url, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${this.token}`,
-      },
+    const endpoint = `${this.baseUrl}/get/${this.encKey(key)}`
+    const res = await fetch(endpoint, {
+      headers: { Authorization: `Bearer ${this.token}` },
     })
 
-    if (!response.ok) {
-      throw new Error(`Redis GET failed: ${response.statusText}`)
-    }
+    if (res.status === 404) return null
+    if (!res.ok) throw new Error(`Redis GET failed: ${res.status} ${res.statusText}`)
 
-    const data = await response.json()
-    return data.result
+    const { result } = (await res.json()) as { result: string | null }
+    return result // encoded string | null
   }
 
   async incr(key: string) {
-    const url = `${this.baseUrl}/incr/${key}`
-
-    const response = await fetch(url, {
+    const endpoint = `${this.baseUrl}/incr/${this.encKey(key)}`
+    const res = await fetch(endpoint, {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${this.token}`,
-      },
+      headers: { Authorization: `Bearer ${this.token}` },
     })
-
-    if (!response.ok) {
-      throw new Error(`Redis INCR failed: ${response.statusText}`)
-    }
-
-    return response.json()
+    if (!res.ok) throw new Error(`Redis INCR failed: ${res.status} ${res.statusText}`)
+    return res.json()
   }
 
   async expire(key: string, seconds: number) {
-    const url = `${this.baseUrl}/expire/${key}/${seconds}`
-
-    const response = await fetch(url, {
+    const endpoint = `${this.baseUrl}/expire/${this.encKey(key)}/${seconds}`
+    const res = await fetch(endpoint, {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${this.token}`,
-      },
+      headers: { Authorization: `Bearer ${this.token}` },
     })
-
-    return response.json()
+    return res.json()
   }
 }
 
 const redis = new UpstashRedis()
 
+/* --------------------------------------------------------
+ * Types & helpers
+ * ------------------------------------------------------ */
 interface ShortenedUrlData {
   originalUrl: string
   shortCode: string
   createdAt: string
 }
 
-// 6자리 랜덤 코드 생성
+const TTL_24H = 24 * 60 * 60 // 24시간
+
 function generateShortCode(): string {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
-  let result = ""
-  for (let i = 0; i < 6; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length))
-  }
-  return result
+  return Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join("")
 }
 
+/* --------------------------------------------------------
+ * POST  /api/shorten  – create (or return existing) short URL
+ * ------------------------------------------------------ */
 export async function POST(request: NextRequest) {
   try {
     const { originalUrl } = await request.json()
@@ -104,146 +100,93 @@ export async function POST(request: NextRequest) {
     if (!originalUrl) {
       return NextResponse.json({ error: "URL이 필요합니다." }, { status: 400 })
     }
-
-    // URL 유효성 검사
     try {
       new URL(originalUrl)
     } catch {
       return NextResponse.json({ error: "유효하지 않은 URL입니다." }, { status: 400 })
     }
 
-    // 이미 단축된 URL이 있는지 확인 (원본 URL을 키로 사용)
+    /* 1) 이미 존재하는지 확인 (원본 URL ➞ 코드) */
     const existingCode = await redis.get(`url:${originalUrl}`)
     if (existingCode) {
-      const baseUrl = request.nextUrl.origin
-      const shortUrl = `${baseUrl}/s/${existingCode}`
-
-      return NextResponse.json({
-        shortUrl,
-        shortCode: existingCode,
-        originalUrl,
-        cached: true,
-      })
+      const shortUrl = `${request.nextUrl.origin}/s/${existingCode}`
+      return NextResponse.json({ shortUrl, shortCode: existingCode, originalUrl, cached: true })
     }
 
-    // 새로운 단축 코드 생성 (중복 체크)
+    /* 2) 새 코드 생성 (충돌 방지) */
     let shortCode = generateShortCode()
-    let attempts = 0
-    const maxAttempts = 10
-
-    while (attempts < maxAttempts) {
-      const existing = await redis.get(`short:${shortCode}`)
-      if (!existing) break
-
+    while ((await redis.get(`short:${shortCode}`)) !== null) {
       shortCode = generateShortCode()
-      attempts++
     }
 
-    if (attempts >= maxAttempts) {
-      return NextResponse.json({ error: "단축 코드 생성에 실패했습니다." }, { status: 500 })
-    }
-
-    const baseUrl = request.nextUrl.origin
-    const shortUrl = `${baseUrl}/s/${shortCode}`
-
+    const shortUrl = `${request.nextUrl.origin}/s/${shortCode}`
     const urlData: ShortenedUrlData = {
       originalUrl,
       shortCode,
       createdAt: new Date().toISOString(),
     }
 
-    // 24시간 TTL (86400초)
-    const TTL_SECONDS = 24 * 60 * 60
-
-    // Redis에 저장
+    /* 3) 저장 – 24시간 TTL */
     await Promise.all([
-      // 단축코드 -> 원본URL 매핑 (24시간 TTL)
-      redis.set(`short:${shortCode}`, JSON.stringify(urlData), TTL_SECONDS),
-      // 원본URL -> 단축코드 매핑 (24시간 TTL)
-      redis.set(`url:${originalUrl}`, shortCode, TTL_SECONDS),
-      // 클릭 카운터 초기화 (24시간 TTL)
-      redis.set(`clicks:${shortCode}`, 0, TTL_SECONDS),
+      redis.set(`short:${shortCode}`, urlData, TTL_24H),
+      redis.set(`url:${originalUrl}`, shortCode, TTL_24H),
+      redis.set(`clicks:${shortCode}`, 0, TTL_24H),
     ])
 
-    console.log(`✅ URL 단축 성공: ${originalUrl} -> ${shortUrl}`)
-
-    return NextResponse.json({
-      shortUrl,
-      shortCode,
-      originalUrl,
-      expiresIn: "24시간",
-      cached: false,
-    })
-  } catch (error) {
-    console.error("❌ URL 단축 오류:", error)
+    return NextResponse.json({ shortUrl, shortCode, originalUrl, expiresIn: "24시간", cached: false })
+  } catch (err) {
+    console.error("❌ URL 단축 오류:", err)
     return NextResponse.json({ error: "URL 단축 중 오류가 발생했습니다." }, { status: 500 })
   }
 }
 
+/* --------------------------------------------------------
+ * GET  /api/shorten?code=XXXXXX  – get original URL & count click
+ * ------------------------------------------------------ */
 export async function GET(request: NextRequest) {
   try {
-    const shortCode = request.nextUrl.searchParams.get("code")
-
-    if (!shortCode) {
+    const code = request.nextUrl.searchParams.get("code")
+    if (!code) {
       return NextResponse.json({ error: "단축 코드가 필요합니다." }, { status: 400 })
     }
 
-    // Redis에서 URL 데이터 조회
-    const urlDataStr = await redis.get(`short:${shortCode}`)
-
-    if (!urlDataStr) {
-      return NextResponse.json(
-        {
-          error: "존재하지 않거나 만료된 링크입니다.",
-        },
-        { status: 404 },
-      )
+    const encoded = await redis.get(`short:${code}`)
+    if (!encoded) {
+      return NextResponse.json({ error: "존재하지 않거나 만료된 링크입니다." }, { status: 404 })
     }
 
-    const urlData: ShortenedUrlData = JSON.parse(urlDataStr)
+    const urlData = JSON.parse(decodeURIComponent(encoded)) as ShortenedUrlData
 
-    // 클릭 수 증가 (비동기로 처리하여 응답 속도 향상)
-    redis.incr(`clicks:${shortCode}`).catch((err) => {
-      console.error("클릭 수 증가 실패:", err)
-    })
+    /* 클릭 수 증가 – 응답과 별개로 비동기 */
+    redis.incr(`clicks:${code}`).catch(console.error)
 
-    console.log(`🔗 리다이렉트: ${shortCode} -> ${urlData.originalUrl}`)
-
-    return NextResponse.json({
-      originalUrl: urlData.originalUrl,
-      shortCode: urlData.shortCode,
-      createdAt: urlData.createdAt,
-    })
-  } catch (error) {
-    console.error("❌ URL 조회 오류:", error)
+    return NextResponse.json({ ...urlData })
+  } catch (err) {
+    console.error("❌ URL 조회 오류:", err)
     return NextResponse.json({ error: "URL 조회 중 오류가 발생했습니다." }, { status: 500 })
   }
 }
 
-// 통계 조회 API (선택사항)
+/* --------------------------------------------------------
+ * PATCH  /api/shorten  – stats (clicks, createdAt, …)
+ * ------------------------------------------------------ */
 export async function PATCH(request: NextRequest) {
   try {
     const { shortCode } = await request.json()
-
     if (!shortCode) {
       return NextResponse.json({ error: "단축 코드가 필요합니다." }, { status: 400 })
     }
 
-    const [urlDataStr, clicks] = await Promise.all([redis.get(`short:${shortCode}`), redis.get(`clicks:${shortCode}`)])
+    const [encoded, clicks] = await Promise.all([redis.get(`short:${shortCode}`), redis.get(`clicks:${shortCode}`)])
 
-    if (!urlDataStr) {
+    if (!encoded) {
       return NextResponse.json({ error: "존재하지 않는 링크입니다." }, { status: 404 })
     }
 
-    const urlData: ShortenedUrlData = JSON.parse(urlDataStr)
-
-    return NextResponse.json({
-      ...urlData,
-      clicks: clicks || 0,
-      expiresIn: "24시간",
-    })
-  } catch (error) {
-    console.error("❌ 통계 조회 오류:", error)
+    const urlData = JSON.parse(decodeURIComponent(encoded)) as ShortenedUrlData
+    return NextResponse.json({ ...urlData, clicks: Number(clicks ?? 0), expiresIn: "24시간" })
+  } catch (err) {
+    console.error("❌ 통계 조회 오류:", err)
     return NextResponse.json({ error: "통계 조회 중 오류가 발생했습니다." }, { status: 500 })
   }
 }
