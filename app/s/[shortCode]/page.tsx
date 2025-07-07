@@ -59,7 +59,7 @@ export default function ShortUrlRedirectPage() {
         }
 
         setOriginalUrl(data.originalUrl)
-        console.log(`🔗 단축 링크 해석 (${data.storage || "unknown"}): ${shortCode} -> ${data.originalUrl}`)
+        console.log(`🔗 단축 링크 해석: ${shortCode} -> ${data.originalUrl}`)
       } catch (error) {
         console.error("링크 조회 오류:", error)
 
