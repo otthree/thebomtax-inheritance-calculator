@@ -196,7 +196,7 @@ export default function ResultPage() {
     if (!calculationData) return
 
     setIsSharing(true)
-    setShareButtonText("🔗 단축중...")
+    setShareButtonText("🔗 복사중...")
 
     try {
       const originalUrl = generateShareUrl()
