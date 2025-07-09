@@ -466,7 +466,7 @@ https://blog.naver.com/l77155/223777746014`,
               {isSharing ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  {shareButtonText.includes("단축") ? "단축중..." : "생성중..."}
+                  {shareButtonText.includes("복사중") ? "복사중..." : "생성중..."}
                 </>
               ) : (
                 shareButtonText
