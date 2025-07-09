@@ -112,6 +112,10 @@ export default function ResultPage() {
     }
     setLoading(false)
   }, [])
+  
+  const forceKoreanDomain = (url: string): string => {
+    return url.replace("https://xn--9m1bt7p83cvnvn.com", "https://상속세더봄.com")
+  }
 
   const convertWonToKoreanAmount = (amount: number): string => {
     amount = amount / 10000
