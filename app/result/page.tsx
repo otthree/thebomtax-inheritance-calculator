@@ -533,7 +533,7 @@ https://blog.naver.com/l77155/223777746014`,
             <div className="font-medium mb-2">⚠️ 주의사항</div>
             <ul className="text-sm space-y-1">
               <li>• 이 결과는 참고용이며, 실제 상속세는 세무사와 상담하시기 바랍니다.</li>
-              <li>• 증여 합산, 특수관계인 공제 등 추가적인 요소가 있을 수 있습니다.</li>
+              <li>• 예외적인 상황은 반영이 되지 않을 수 있습니다.</li>
               <li>• 세법 개정에 따라 계산 기준이 변경될 수 있습니다.</li>
             </ul>
           </AlertDescription>
