@@ -233,8 +233,14 @@ export default function ResultPage() {
       const shortUrl = await shortenUrl(originalUrl)
 
       const shareData = {
-        title: "상속세 계산 결과",
-        text: `상속세 계산 결과: ${convertWonToKoreanAmount(calculationData.calculationResult.finalTax * 10000)}`,
+        text: `상속세 계산 결과를 확인해보세요!
+
+        ${forceKoreanDomain(shortUrl)}
+
+        상속세 계산 결과: ${convertWonToKoreanAmount(calculationData.calculationResult.finalTax * 10000)}
+
+        📍세무사 수수료가 궁금하다면?
+        https://blog.naver.com/l77155/223777746014`,
         url: forceKoreanDomain(shortUrl),
       }
 
