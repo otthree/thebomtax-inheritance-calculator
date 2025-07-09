@@ -112,7 +112,7 @@ export default function ResultPage() {
     }
     setLoading(false)
   }, [])
-  
+
   const forceKoreanDomain = (url: string): string => {
     return url.replace("https://xn--9m1bt7p83cvnvn.com", "https://상속세더봄.com")
   }
@@ -235,7 +235,7 @@ export default function ResultPage() {
       const shareData = {
         title: "상속세 계산 결과",
         text: `상속세 계산 결과: ${convertWonToKoreanAmount(calculationData.calculationResult.finalTax * 10000)}`,
-        url: shortUrl,
+        url: forceKoreanDomain(shortUrl),
       }
 
       if (navigator.share) {
