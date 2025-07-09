@@ -235,12 +235,12 @@ export default function ResultPage() {
       const shareData = {
         text: `상속세 계산 결과를 확인해보세요!
 
-      ${forceKoreanDomain(shortUrl)}
+${forceKoreanDomain(shortUrl)}
 
-      상속세 계산 결과: ${convertWonToKoreanAmount(calculationData.calculationResult.finalTax * 10000)}
+상속세 계산 결과: ${convertWonToKoreanAmount(calculationData.calculationResult.finalTax * 10000)}
 
-      📍세무사 수수료가 궁금하다면?
-      https://blog.naver.com/l77155/223777746014`,
+📍세무사 수수료가 궁금하다면?
+https://blog.naver.com/l77155/223777746014`,
       }
 
       if (navigator.share) {
