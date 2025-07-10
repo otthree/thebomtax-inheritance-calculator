@@ -66,7 +66,7 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <head>
-        <script async src="https://www.googletagmanager.com/gtag/js?id=GA_MEASUREMENT_ID"></script>
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-39EWYCWY0J"></script>
         <script
           dangerouslySetInnerHTML={{
             __html: `
