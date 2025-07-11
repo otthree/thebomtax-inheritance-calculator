@@ -264,7 +264,13 @@ export default function InheritanceTaxCalculator() {
   }
 
   // 배우자 공제액 계산 함수
-  const calculateSpouseDeduction = (childrenCount: number, parentsCount: number, spouseExpectedInheritance: number) => {
+  const calculateSpouseDeduction = (
+    childrenCount: number,
+    parentsCount: number,
+    spouseExpectedInheritance: number,
+    netAssets: number,
+    gifts: any[],
+  ) => {
     let a = childrenCount
     const b = parentsCount
     const c = spouseExpectedInheritance
@@ -274,9 +280,24 @@ export default function InheritanceTaxCalculator() {
       a = b
     }
 
-    // 배우자공제액 = max(5억, min(30억, 1.5*c/(1.5+a)))
-    const calculatedDeduction = (1.5 * c) / (1.5 + a)
-    const spouseDeduction = Math.max(500000000, Math.min(3000000000, calculatedDeduction))
+    // 배우자 사전증여액에서 6억을 공제한 값 (배우자과세표준)
+    const spouseGiftTotal = gifts
+      .filter((gift) => gift.relationship === "spouse")
+      .reduce((total, gift) => {
+        const amount = gift.amount?.replace(/,/g, "") || "0"
+        return total + Number.parseInt(amount) * 10000
+      }, 0)
+
+    const 배우자과세표준 = Math.max(0, spouseGiftTotal - 600000000) // 6억 공제
+
+    // d = 순재산가액 - 배우자과세표준
+    const d = netAssets - 배우자과세표준
+
+    // 법적한도 T = min(30억, 1.5*d / (1.5+a))
+    const T = Math.min(3000000000, (1.5 * d) / (1.5 + a))
+
+    // 배우자공제액 = max(5억, min(c, T))
+    const spouseDeduction = Math.max(500000000, Math.min(c, T))
 
     // 만원 단위로 반올림
     return Math.round(spouseDeduction / 10000) * 10000
@@ -333,7 +354,13 @@ export default function InheritanceTaxCalculator() {
       const parentsCount = Number.parseInt(data.parentsCount) || 0
       const spouseExpectedInheritance = convertToWon(data.spouseExpectedInheritance)
 
-      spouseDeductionAmount = calculateSpouseDeduction(childrenCount, parentsCount, spouseExpectedInheritance)
+      spouseDeductionAmount = calculateSpouseDeduction(
+        childrenCount,
+        parentsCount,
+        spouseExpectedInheritance,
+        netAssets,
+        data.gifts,
+      )
     }
 
     if (data.housingDeduction) housingDeductionAmount = 600000000
@@ -343,8 +370,8 @@ export default function InheritanceTaxCalculator() {
       netFinancialAssets <= 20000000
         ? netFinancialAssets
         : netFinancialAssets <= 100000000
-        ? 20000000
-        : Math.min(netFinancialAssets * 0.2, 200000000)
+          ? 20000000
+          : Math.min(netFinancialAssets * 0.2, 200000000)
 
     const totalDeductions = basicDeductionAmount + spouseDeductionAmount + housingDeductionAmount + financialDeduction
     const taxableAmount = Math.max(0, netAssets - totalDeductions)
