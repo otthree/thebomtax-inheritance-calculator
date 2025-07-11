@@ -339,7 +339,12 @@ export default function InheritanceTaxCalculator() {
     if (data.housingDeduction) housingDeductionAmount = 600000000
 
     const netFinancialAssets = Math.max(0, financialAssetsTotal - financialDebtTotal)
-    const financialDeduction = Math.min(netFinancialAssets * 0.2, 200000000)
+    const financialDeduction =
+      netFinancialAssets <= 20000000
+        ? netFinancialAssets
+        : netFinancialAssets <= 100000000
+        ? 20000000
+        : Math.min(netFinancialAssets * 0.2, 200000000)
 
     const totalDeductions = basicDeductionAmount + spouseDeductionAmount + housingDeductionAmount + financialDeduction
     const taxableAmount = Math.max(0, netAssets - totalDeductions)
