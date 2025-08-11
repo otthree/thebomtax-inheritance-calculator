@@ -1106,16 +1106,6 @@ export default function InheritanceTaxCalculator() {
                     </AlertDescription>
                   </Alert>
 
-                  {calculationResult.netAssets > 500000000 && (
-                    <Alert className="bg-yellow-50 border-yellow-200">
-                      <AlertTriangle className="h-4 w-4 text-yellow-600" />
-                      <AlertDescription className="text-yellow-800 text-sm">
-                        💡 상속세 과세가액이 5억원을 초과하여 종합한도가 적용됩니다. (한도:{" "}
-                        {convertWonToKoreanAmount(calculationResult.comprehensiveLimit)})
-                      </AlertDescription>
-                    </Alert>
-                  )}
-
                   <div className="flex justify-between pt-4">
                     <Button variant="outline" onClick={prevStep}>
                       이전
@@ -1163,14 +1153,6 @@ export default function InheritanceTaxCalculator() {
                         -{convertWonToKoreanAmount(calculationResult.totalDeductions)}
                       </span>
                     </div>
-                    {calculationResult.netAssets > 500000000 && (
-                      <div className="flex justify-between text-xs">
-                        <span className="text-slate-500">종합한도 적용</span>
-                        <span className="text-slate-500">
-                          {convertWonToKoreanAmount(calculationResult.comprehensiveLimit)}
-                        </span>
-                      </div>
-                    )}
                     <div className="flex justify-between font-medium">
                       <span className="text-slate-600">과세표준</span>
                       <span className="text-slate-900">
@@ -1329,12 +1311,6 @@ export default function InheritanceTaxCalculator() {
                               {convertWonToKoreanAmount(calculationResult.financialDeduction)}
                             </span>
                           </div>
-                          {calculationResult.netAssets > 500000000 && (
-                            <div className="flex justify-between text-xs text-orange-600">
-                              <span>종합한도 적용:</span>
-                              <span>{convertWonToKoreanAmount(calculationResult.comprehensiveLimit)}</span>
-                            </div>
-                          )}
                           <div className="flex justify-between font-medium pt-2 border-t border-slate-200">
                             <span className="text-slate-600">총 공제액:</span>
                             <span className="text-purple-700">
@@ -1436,7 +1412,6 @@ export default function InheritanceTaxCalculator() {
                           <div>✓ 배우자공제: 최소 5억원 ~ 최대 30억원</div>
                           <div>✓ 동거주택 상속공제: 최대 6억원</div>
                           <div>✓ 금융자산 상속공제: 순금융자산의 20% (최대 2억원)</div>
-                          <div>✓ 종합한도: 상속세 과세가액 5억원 초과시 적용</div>
                         </div>
                       </div>
 
