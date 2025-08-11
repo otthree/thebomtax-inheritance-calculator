@@ -89,6 +89,7 @@ export default function InheritanceTaxCalculator() {
     totalDeductions: 0,
     financialDeduction: 0,
     spouseDeductionAmount: 0, // 실제 배우자 공제액
+    comprehensiveLimit: 0, // 종합한도
     taxableAmount: 0,
     taxRate: 0,
     progressiveDeduction: 0,
@@ -303,6 +304,33 @@ export default function InheritanceTaxCalculator() {
     return Math.round(spouseDeduction / 10000) * 10000
   }
 
+  // 종합한도 계산 함수
+  const calculateComprehensiveLimit = (netAssets: number, gifts: any[]) => {
+    // 상속세 과세가액이 5억원 이하면 종합한도 적용 안함
+    if (netAssets <= 500000000) {
+      return Number.MAX_SAFE_INTEGER // 무제한
+    }
+
+    // 사전증여재산가액
+    const giftAssetsTotal = gifts.reduce((total, gift) => {
+      const amount = gift.amount?.replace(/,/g, "") || "0"
+      return total + Number.parseInt(amount) * 10000
+    }, 0)
+
+    // 증여재산 공제액 등 계산
+    const giftDeductionTotal = gifts.reduce((total, gift) => {
+      const amount = gift.amount?.replace(/,/g, "") || "0"
+      const giftAmount = Number.parseInt(amount) * 10000
+      const deductionAmount = gift.relationship === "spouse" ? 600000000 : 50000000 // 6억 vs 5천만
+      return total + Math.min(giftAmount, deductionAmount)
+    }, 0)
+
+    // 종합한도 = 상속세 과세가액 - (사전증여재산가액 - 증여재산 공제액 등)
+    const comprehensiveLimit = netAssets - (giftAssetsTotal - giftDeductionTotal)
+
+    return Math.max(0, comprehensiveLimit)
+  }
+
   const calculateTax = (data: typeof formData) => {
     const convertToWon = (value: string) => {
       const numericValue = value?.replace(/,/g, "") || "0"
@@ -373,7 +401,17 @@ export default function InheritanceTaxCalculator() {
           ? 20000000
           : Math.min(netFinancialAssets * 0.2, 200000000)
 
-    const totalDeductions = basicDeductionAmount + spouseDeductionAmount + housingDeductionAmount + financialDeduction
+    // 종합한도 계산
+    const comprehensiveLimit = calculateComprehensiveLimit(netAssets, data.gifts)
+
+    // 종합한도 적용 대상 공제액들의 합
+    const deductionsSubjectToLimit =
+      basicDeductionAmount + spouseDeductionAmount + financialDeduction + housingDeductionAmount
+
+    // 종합한도 적용
+    const limitedDeductions = Math.min(deductionsSubjectToLimit, comprehensiveLimit)
+
+    const totalDeductions = limitedDeductions
     const taxableAmount = Math.max(0, netAssets - totalDeductions)
 
     let taxRate = 0
@@ -424,6 +462,7 @@ export default function InheritanceTaxCalculator() {
       totalDeductions,
       financialDeduction,
       spouseDeductionAmount,
+      comprehensiveLimit,
       taxableAmount,
       taxRate,
       progressiveDeduction,
@@ -1067,6 +1106,16 @@ export default function InheritanceTaxCalculator() {
                     </AlertDescription>
                   </Alert>
 
+                  {calculationResult.netAssets > 500000000 && (
+                    <Alert className="bg-yellow-50 border-yellow-200">
+                      <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                      <AlertDescription className="text-yellow-800 text-sm">
+                        💡 상속세 과세가액이 5억원을 초과하여 종합한도가 적용됩니다. (한도:{" "}
+                        {convertWonToKoreanAmount(calculationResult.comprehensiveLimit)})
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
                   <div className="flex justify-between pt-4">
                     <Button variant="outline" onClick={prevStep}>
                       이전
@@ -1114,6 +1163,14 @@ export default function InheritanceTaxCalculator() {
                         -{convertWonToKoreanAmount(calculationResult.totalDeductions)}
                       </span>
                     </div>
+                    {calculationResult.netAssets > 500000000 && (
+                      <div className="flex justify-between text-xs">
+                        <span className="text-slate-500">종합한도 적용</span>
+                        <span className="text-slate-500">
+                          {convertWonToKoreanAmount(calculationResult.comprehensiveLimit)}
+                        </span>
+                      </div>
+                    )}
                     <div className="flex justify-between font-medium">
                       <span className="text-slate-600">과세표준</span>
                       <span className="text-slate-900">
@@ -1272,6 +1329,12 @@ export default function InheritanceTaxCalculator() {
                               {convertWonToKoreanAmount(calculationResult.financialDeduction)}
                             </span>
                           </div>
+                          {calculationResult.netAssets > 500000000 && (
+                            <div className="flex justify-between text-xs text-orange-600">
+                              <span>종합한도 적용:</span>
+                              <span>{convertWonToKoreanAmount(calculationResult.comprehensiveLimit)}</span>
+                            </div>
+                          )}
                           <div className="flex justify-between font-medium pt-2 border-t border-slate-200">
                             <span className="text-slate-600">총 공제액:</span>
                             <span className="text-purple-700">
@@ -1291,7 +1354,7 @@ export default function InheritanceTaxCalculator() {
                             </span>
                           </div>
                           <div className="text-xs text-slate-500">
-                            {convertWonToKoreanAmount(calculationResult.totalAssets)} -{" "}
+                            {convertWonToKoreanAmount(calculationResult.netAssets)} -{" "}
                             {convertWonToKoreanAmount(calculationResult.totalDeductions)} ={" "}
                             {convertWonToKoreanAmount(calculationResult.taxableAmount)}
                           </div>
@@ -1373,6 +1436,7 @@ export default function InheritanceTaxCalculator() {
                           <div>✓ 배우자공제: 최소 5억원 ~ 최대 30억원</div>
                           <div>✓ 동거주택 상속공제: 최대 6억원</div>
                           <div>✓ 금융자산 상속공제: 순금융자산의 20% (최대 2억원)</div>
+                          <div>✓ 종합한도: 상속세 과세가액 5억원 초과시 적용</div>
                         </div>
                       </div>
 
