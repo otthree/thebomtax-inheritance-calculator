@@ -1311,6 +1311,12 @@ export default function InheritanceTaxCalculator() {
                               {convertWonToKoreanAmount(calculationResult.financialDeduction)}
                             </span>
                           </div>
+                          {calculationResult.netAssets > 500000000 && (
+                            <div className="flex justify-between text-xs text-orange-600 bg-orange-50 p-2 rounded">
+                              <span>종합한도 적용:</span>
+                              <span>{convertWonToKoreanAmount(calculationResult.comprehensiveLimit)}</span>
+                            </div>
+                          )}
                           <div className="flex justify-between font-medium pt-2 border-t border-slate-200">
                             <span className="text-slate-600">총 공제액:</span>
                             <span className="text-purple-700">
